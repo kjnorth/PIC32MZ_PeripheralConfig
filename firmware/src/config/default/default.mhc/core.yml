@@ -19,13 +19,6 @@ children:
       - type: Dynamic
         attributes: {id: core, value: '100000000'}
   - type: String
-    attributes: {id: BSP_PIN_100_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
     attributes: {id: BSP_PIN_101_MODE}
     children:
     - type: Values

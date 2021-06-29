@@ -1,9 +1,9 @@
 build/default/production/_ext/1171490990/initialization.o: \
  ../src/config/default/initialization.c \
  ../src/config/default/definitions.h \
+ ../src/config/default/peripheral/coretimer/plib_coretimer.h \
  ../src/config/default/peripheral/i2c/master/plib_i2c1_master.h \
  ../src/config/default/peripheral/i2c/master/plib_i2c_master_common.h \
- ../src/config/default/peripheral/coretimer/plib_coretimer.h \
  ../src/config/default/peripheral/adchs/plib_adchs.h \
  ../src/config/default/peripheral/adchs/plib_adchs_common.h \
  ../src/config/default/peripheral/uart/plib_uart1.h \
@@ -19,11 +19,11 @@ build/default/production/_ext/1171490990/initialization.o: \
 
 ../src/config/default/definitions.h:
 
+../src/config/default/peripheral/coretimer/plib_coretimer.h:
+
 ../src/config/default/peripheral/i2c/master/plib_i2c1_master.h:
 
 ../src/config/default/peripheral/i2c/master/plib_i2c_master_common.h:
-
-../src/config/default/peripheral/coretimer/plib_coretimer.h:
 
 ../src/config/default/peripheral/adchs/plib_adchs.h:
 
