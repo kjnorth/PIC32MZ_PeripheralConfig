@@ -10,6 +10,8 @@
 
 #define PIC32_SERIAL Serial1
 #define DUMMY_SPI_DATA 0xFF
+#define PRINT_STR_MAX_LEN 255u
+#define PRINT_ACK 0xACu
 
 volatile uint8_t rec, send;
 
@@ -34,21 +36,22 @@ void setup() {
 void loop() {
   static uint8_t preRec = rec;
   if (rec != preRec) {
-    LogInfo(F("received byte: 0x%X\n"), rec);
+    LogInfo(F("received byte: 0x%02X\n"), rec);
     preRec = rec;
   }
 
   if (PIC32_SERIAL.available()) {
-    char message[255];
-    int size = PIC32_SERIAL.readBytesUntil('\e', message, 255);
+    char message[PRINT_STR_MAX_LEN];
+    int size = PIC32_SERIAL.readBytesUntil('\0', message, PRINT_STR_MAX_LEN);
     for (int i = 0; i < size; i++) {
       Serial.print(message[i]);
     }
+    PIC32_SERIAL.write(PRINT_ACK);
   }
 }
 
 ISR (SPI_STC_vect) {
   rec = SPDR;
-  send = DUMMY_SPI_DATA;
+  send++;
   SPDR = send;
 }

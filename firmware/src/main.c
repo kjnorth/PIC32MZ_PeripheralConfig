@@ -16,44 +16,49 @@
 #include "peripheral/spi/spi_master/plib_spi4_master.h"
 #include "definitions.h"
 
-#define PRINT_ACK 0xAC
+#define PRINT_STR_MAX_LEN 255u
+#define PRINT_ACK 0xACu
 
-void Print(const char* str, ...);
+void Print(const char* fmt, ...);
 void FlashLED1(void);
 
 /*
  * 
  */
 int main(int argc, char** argv) {
-    //    printf("hello world\r\n");
     SYS_Initialize(NULL);
+    Print("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
 
-    uint8_t data = 0xA5;
+    uint8_t sendData = 0xA5;
+    uint8_t recData = 0;
 
     while (1) {
         FlashLED1();
-        SPI4_Write(&data, 1);
-        data++;
-        Print("Hello Arduino, %d, %u\n\e", (int)-12, (uint8_t)158);
+//        SPI4_Write(&sendData, 1);
+//        sendData++;
+//        SPI4_Read(&recData, 1);
+        SPI4_WriteRead(&sendData, 1, &recData, 1);
+        sendData++;
+        Print("PIC32 received 0x%02X\n", recData);
     }
 
     return (EXIT_SUCCESS);
 }
 
-void Print(const char* str, ...) {
-    const uint8_t length = strlen(str);
-    char message[length];
+void Print(const char* fmt, ...) {
+    // format message based on the fmt passed along with variadic arguments
+    char message[PRINT_STR_MAX_LEN];
     va_list args;
-    va_start(args, str);
-    sprintf(message, str, args);
-    UART1_Write(message, length);
+    va_start(args, fmt);
+    vsprintf(message, fmt, args);
+    // write to Arduino via UART1
+    UART1_Write(message, strlen(message));
     va_end(args);
-    
-    // simple test
-//    UART1_Write((char*)str, strlen(str));
-    
-    // write str, loop until ack is received, illuminate red LED if ack never received
-//    UART1_Read()
+    // wait for Arduino to ACK
+    uint8_t ack = 0;
+    do {
+        ack = (uint8_t) UART1_ReadByte();
+    } while (ack != PRINT_ACK);
 }
 
 void FlashLED1(void) {
