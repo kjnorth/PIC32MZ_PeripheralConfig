@@ -11,7 +11,7 @@
 #define PIC32_SERIAL Serial1
 #define DUMMY_SPI_DATA 0xFF
 #define PRINT_STR_MAX_LEN 255u
-#define PRINT_ACK 0xACu
+#define PRINT_EXPECTED_ACK 0xACu
 
 volatile uint8_t rec, send;
 
@@ -29,7 +29,8 @@ void setup() {
   pinMode(MOSI, INPUT);
   pinMode(MISO, OUTPUT);
   pinMode(SCK, INPUT);
-  SPCR = 0xC0; // interrupts enabled, SPI peripheral enabled, MSB transmitted first, slave, SCK idle low, sample on rising edge, clk bits [1:0] meaningless in slave mode
+  SPCR = 0xC0; // SPI interrupts enabled, SPI peripheral enabled, MSB transmitted first, slave mode,
+               // SCK idle low, sample on rising edge, clk bits [1:0] meaningless in slave mode
   SREG = sreg;
 }
 
@@ -46,7 +47,7 @@ void loop() {
     for (int i = 0; i < size; i++) {
       Serial.print(message[i]);
     }
-    PIC32_SERIAL.write(PRINT_ACK);
+    PIC32_SERIAL.write(PRINT_EXPECTED_ACK);
   }
 }
 
