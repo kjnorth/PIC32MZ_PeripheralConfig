@@ -19,4 +19,4 @@ children:
       - type: Dynamic
         attributes: {id: spi4, value: '49'}
 - type: ElementPosition
-  attributes: {x: '322', y: '265', id: spi4}
+  attributes: {x: '322', y: '263', id: spi4}

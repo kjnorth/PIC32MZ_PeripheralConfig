@@ -40,7 +40,7 @@ void loop() {
     LogInfo(F("received byte: 0x%02X\n"), rec);
     preRec = rec;
   }
-
+  delay(10);
   if (PIC32_SERIAL.available()) {
     char message[PRINT_STR_MAX_LEN];
     int size = PIC32_SERIAL.readBytesUntil('\0', message, PRINT_STR_MAX_LEN);
