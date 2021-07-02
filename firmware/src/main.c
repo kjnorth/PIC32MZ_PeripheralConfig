@@ -21,21 +21,26 @@
 #define PRINT_WAIT_FOR_ACK_NUM_RETRIES 3u
 #define PRINT_EXPECTED_ACK 0xACu
 
-#define UART_BLOCKING 1 // set to 1 for blocking uart config, 0 for non-blocking uart config
+#define UART_BLOCKING 0 // set to 1 for blocking uart config, 0 for non-blocking uart config
 
 // **** UART Definitions for Blocking/NonBlocking ****
 #if UART_BLOCKING
 void Print_BlockingUART(const char* fmt, ...);
 #else
-void Print_NonBlockingUART(const char* fmt, ...);
+bool Print_NonBlockingUART(const char* fmt, ...);
 void UART1_WriteCallback(uintptr_t context);
 void UART1_ReadCallback(uintptr_t context);
 
-extern UART_OBJECT uart1Obj;
+UART_ERROR errors;
 
-bool errorStatus = false;
-bool writeStatus = false;
-bool readStatus = false;
+typedef struct {
+    bool isRxErrorDetected;
+    bool isTxFinished;
+    bool isRxFinished;
+} uart_flags_t;
+uart_flags_t uart1;
+void UART_FlagsInit(uart_flags_t* uart);
+
 uint8_t ack;
 #endif
 // **** **************************************** *****
@@ -44,6 +49,7 @@ volatile uint32_t msTicks; // notes - callback is necessary to track time, do no
 // why does it not work when using the coreTmr object??? confused
 void CORETIMER_InterruptCallback(uint32_t status, uintptr_t context);
 
+void SPIComm1Hz(void);
 void FlashLED1(void);
 
 /*
@@ -53,68 +59,77 @@ int main(int argc, char** argv) {
     SYS_Initialize(NULL);
     CORETIMER_CallbackSet(CORETIMER_InterruptCallback, (uintptr_t) NULL);
     CORETIMER_Start();
+    LED1_Clear();
 
     // test the Print_BlockingUART function.. it works like a charm ;)
 #if UART_BLOCKING
     Print_BlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
 #else
-    //    UART1_WriteCallbackRegister(UART1_WriteCallback, 0);
-    //    UART1_ReadCallbackRegister(UART1_ReadCallback, 0);
+    UART_FlagsInit(&uart1);
+    UART1_WriteCallbackRegister(UART1_WriteCallback, 0);
+    UART1_ReadCallbackRegister(UART1_ReadCallback, 0);
     Print_NonBlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 999, (uint8_t) 77, 49.187);
 #endif
 
-    uint8_t sendData = 0xA5;
-    uint8_t recData = 0;
-
     while (1) {
-        unsigned long ct = msTicks;
-        static unsigned long pt = 0;
-        if (ct - pt >= 1000) {
-            LED1_Set();
-            pt = ct;
-
-            SPI4_WriteRead(&sendData, 1, &recData, 1);
-            sendData++;
-            // write recData to Arduino via UART to display on a serial port
-#if UART_BLOCKING
-//            Print_BlockingUART("PIC32 received 0x%02X, ms count %lu\n", recData, ct);
-#else
-            //        Print_NonBlockingUART("PIC32 received 0x%02X\n", recData);
-                    Print_NonBlockingUART("PIC32 received some data\n");
-
-            if (errorStatus) {
-                errorStatus = false;
-                // access the errors
-                UART_ERROR errors = uart1Obj.errors;
-                if ((errors & UART_ERROR_OVERRUN) > 0) {
-                    //                LED1_Set();
-                }
-                if ((errors & UART_ERROR_FRAMING) > 0) {
-                    //                LED1_Set();
-                }
-                if ((errors & UART_ERROR_PARITY) > 0) {
-                    //                LED1_Set();
-                }
-            } else if (readStatus) {
-                readStatus = false;
+        SPIComm1Hz();
+        if (uart1.isRxErrorDetected) {
+            uart1.isRxErrorDetected = false;
+            // access the errors
+            if ((errors & UART_ERROR_OVERRUN) > 0) {
                 LED1_Set();
-                // Rx complete, no errors, verify ack
-                if (ack != PRINT_EXPECTED_ACK) {
-                    // ACK not correct, illuminate built in LED1 for a short period of time
-                    //                LED1_Set();
-                }
-            } else if (writeStatus) {
-                writeStatus = false;
-                // Tx complete, read ack
-                ack = 0;
-                //            UART1_Read(&ack, 1);
-                //    LED1_Clear();
             }
-#endif
+            if ((errors & UART_ERROR_FRAMING) > 0) {
+                LED1_Set();
+            }
+            if ((errors & UART_ERROR_PARITY) > 0) {
+                LED1_Set();
+            }
+        } else if (uart1.isRxFinished) {
+            uart1.isRxFinished = false;
+            // Rx complete, verify the ack
+            if (ack != PRINT_EXPECTED_ACK) {
+                // ACK not correct, illuminate built in LED1 for a short period of time
+                LED1_Set();
+            }
+        } else if (uart1.isTxFinished) {
+            uart1.isTxFinished = false;
+            // Tx complete, initiate the read of the Arduino's ack
+            ack = 0;
+            UART1_Read(&ack, 1);
         }
     }
 
     return (EXIT_SUCCESS);
+}
+
+void SPIComm1Hz(void) {
+    uint32_t ct = msTicks;
+    static uint32_t pt = 0;
+//    static uint8_t sendData = 0xA5;
+//    uint8_t recData = 0;
+
+    if (ct - pt >= 1000) {
+        pt = ct;
+
+//        SPI4_WriteRead(&sendData, 1, &recData, 1);
+//        sendData++;
+        // write recData to Arduino via UART to display on a serial port
+#if UART_BLOCKING
+        //            Print_BlockingUART("PIC32 received 0x%02X\n", recData);
+#else
+//                Print_NonBlockingUART("PIC32 received 0x%02X\n", recData); // does not work as expected, message corrupt
+//        Print_NonBlockingUART("PIC32 received some things\n"); // does not work as expected, message corrupt
+        static int i = 0;
+        Print_NonBlockingUART("Hello %d\n", i++); // works but messages not received by arduino at expected 1 sec interval. no corruption though
+                                                  /**
+                                                   * Hello 1 .. works fine
+                                                   * Hello 99 .. works fine
+                                                   * Hello 100 .. NEWLINE is lost!!! Only 8 character msgs sending properly? Once we get to 9 and above, we start to lose them?
+                                                   */
+//        Print_NonBlockingUART("Hi\n");
+#endif
+    }
 }
 
 #if UART_BLOCKING
@@ -150,34 +165,46 @@ void Print_BlockingUART(const char* fmt, ...) {
 
 #else
 
-void Print_NonBlockingUART(const char* fmt, ...) {
-    // format message based on the fmt passed along with variadic arguments
-    char message[PRINT_STR_MAX_LEN];
-    va_list args;
-    va_start(args, fmt);
-    vsprintf(message, fmt, args);
-    // write message via UART1
-    UART1_Write(message, strlen(message));
-    va_end(args);
+bool Print_NonBlockingUART(const char* fmt, ...) {
+    bool returnVal = false;
+    if (!UART1_WriteIsBusy()) {
+        // format message based on the fmt passed along with variadic arguments
+        char message[PRINT_STR_MAX_LEN];
+        va_list args;
+        va_start(args, fmt);
+        vsprintf(message, fmt, args);
+        // write message via UART1
+        UART1_Write(message, strlen(message));
+        va_end(args);
+        returnVal = true;
+    }
+    return returnVal;
 }
 
 /**
  * function called when UART1 finishes transmitting data I THINK
  */
 void UART1_WriteCallback(uintptr_t context) {
-    writeStatus = true;
+    uart1.isTxFinished = true;
 }
 
 /**
  * function called when UART1 finishes reading data I THINK
  */
 void UART1_ReadCallback(uintptr_t context) {
-    if (UART1_ErrorGet() != UART_ERROR_NONE) {
+    errors = UART1_ErrorGet();
+    if (errors != UART_ERROR_NONE) {
         /* ErrorGet clears errors, set error flag to notify console */
-        errorStatus = true;
+        uart1.isRxErrorDetected = true;
     } else {
-        readStatus = true;
+        uart1.isRxFinished = true;
     }
+}
+
+void UART_FlagsInit(uart_flags_t* uart) {
+    uart->isRxErrorDetected = false;
+    uart->isRxFinished = false;
+    uart->isTxFinished = false;
 }
 
 #endif
