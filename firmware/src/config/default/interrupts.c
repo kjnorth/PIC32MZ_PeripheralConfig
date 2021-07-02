@@ -63,8 +63,6 @@
 void CORE_TIMER_InterruptHandler( void );
 void I2C1_BUS_InterruptHandler( void );
 void I2C1_MASTER_InterruptHandler( void );
-void SPI4_RX_InterruptHandler( void );
-void SPI4_TX_InterruptHandler( void );
 
 
 
@@ -82,16 +80,6 @@ void __ISR(_I2C1_BUS_VECTOR, ipl1SRS) I2C1_BUS_Handler (void)
 void __ISR(_I2C1_MASTER_VECTOR, ipl1SRS) I2C1_MASTER_Handler (void)
 {
     I2C1_MASTER_InterruptHandler();
-}
-
-void __ISR(_SPI4_RX_VECTOR, ipl1SRS) SPI4_RX_Handler (void)
-{
-    SPI4_RX_InterruptHandler();
-}
-
-void __ISR(_SPI4_TX_VECTOR, ipl1SRS) SPI4_TX_Handler (void)
-{
-    SPI4_TX_InterruptHandler();
 }
 
 

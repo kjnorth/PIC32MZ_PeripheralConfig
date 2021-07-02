@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 
     // test the Print_BlockingUART function.. it works like a charm ;)
 #if UART_BLOCKING
-//    Print_BlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
+    Print_BlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
 #else
     //    UART1_WriteCallbackRegister(UART1_WriteCallback, 0);
     //    UART1_ReadCallbackRegister(UART1_ReadCallback, 0);
@@ -80,7 +80,7 @@ int main(int argc, char** argv) {
 //            Print_BlockingUART("PIC32 received 0x%02X, ms count %lu\n", recData, ct);
 #else
             //        Print_NonBlockingUART("PIC32 received 0x%02X\n", recData);
-//                    Print_NonBlockingUART("PIC32 received some data\n");
+                    Print_NonBlockingUART("PIC32 received some data\n");
 
             if (errorStatus) {
                 errorStatus = false;
