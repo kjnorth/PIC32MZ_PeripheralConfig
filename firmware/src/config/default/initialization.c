@@ -182,9 +182,9 @@ void SYS_Initialize ( void* data )
 
     ADCHS_Initialize();
 
-	UART1_Initialize();
-
 	SPI4_Initialize();
+
+	UART5_Initialize();
 
 
 

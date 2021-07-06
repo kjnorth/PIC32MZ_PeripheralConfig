@@ -97,7 +97,7 @@ void GPIO_Initialize ( void )
     /* PPS Input Remapping */
     C1RXR = 7;
     C2RXR = 11;
-    U1RXR = 4;
+    U5RXR = 4;
     SDI4R = 3;
 
     /* PPS Output Remapping */
@@ -112,7 +112,7 @@ void GPIO_Initialize ( void )
     RPE8R = 13;
     RPC14R = 15;
     RPF3R = 15;
-    RPF0R = 1;
+    RPF0R = 3;
     RPD9R = 8;
     RPD0R = 8;
 

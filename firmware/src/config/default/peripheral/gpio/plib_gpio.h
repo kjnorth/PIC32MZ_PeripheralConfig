@@ -479,13 +479,13 @@
 #define SOL6_RET_Get()               ((PORTJ >> 0) & 0x1)
 #define SOL6_RET_PIN                  GPIO_PIN_RJ0
 
-/*** Macros for U1TX_TEST pin ***/
-#define U1TX_TEST_Get()               ((PORTF >> 0) & 0x1)
-#define U1TX_TEST_PIN                  GPIO_PIN_RF0
+/*** Macros for U5TX_TEST pin ***/
+#define U5TX_TEST_Get()               ((PORTF >> 0) & 0x1)
+#define U5TX_TEST_PIN                  GPIO_PIN_RF0
 
-/*** Macros for U1RX_TEST pin ***/
-#define U1RX_TEST_Get()               ((PORTF >> 1) & 0x1)
-#define U1RX_TEST_PIN                  GPIO_PIN_RF1
+/*** Macros for U5RX_TEST pin ***/
+#define U5RX_TEST_Get()               ((PORTF >> 1) & 0x1)
+#define U5RX_TEST_PIN                  GPIO_PIN_RF1
 
 /*** Macros for LS1 pin ***/
 #define LS1_Set()               (LATASET = (1<<7))

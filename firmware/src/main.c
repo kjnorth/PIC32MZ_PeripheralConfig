@@ -55,6 +55,8 @@ void FlashLED1(void);
 /*
  * 
  */
+
+/*
 int main(int argc, char** argv) {
     SYS_Initialize(NULL);
     CORETIMER_CallbackSet(CORETIMER_InterruptCallback, (uintptr_t) NULL);
@@ -102,6 +104,8 @@ int main(int argc, char** argv) {
 
     return (EXIT_SUCCESS);
 }
+ *
+ */
 
 void SPIComm1Hz(void) {
     uint32_t ct = msTicks;
@@ -123,9 +127,9 @@ void SPIComm1Hz(void) {
         static int i = 0;
         Print_NonBlockingUART("Hello %d\n", i++); // works but messages not received by arduino at expected 1 sec interval. no corruption though
                                                   /**
-                                                   * Hello 1 .. works fine
-                                                   * Hello 99 .. works fine
-                                                   * Hello 100 .. NEWLINE is lost!!! Only 8 character msgs sending properly? Once we get to 9 and above, we start to lose them?
+                                                   * Hello 0-99 .. works fine, but msgs are not sent to arduino at 1 sec interval
+                                                   * Hello 100-inf .. NEWLINE is lost!!! Only 8 character msgs sending properly? Once we get to 9 and above, we start to lose them?
+                                                   *                .. however, msgs start to send at 1 sec interval. WFT?
                                                    */
 //        Print_NonBlockingUART("Hi\n");
 #endif
