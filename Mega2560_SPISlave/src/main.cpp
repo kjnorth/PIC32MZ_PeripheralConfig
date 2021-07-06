@@ -32,6 +32,9 @@ void setup() {
   SPCR = 0xC0; // SPI interrupts enabled, SPI peripheral enabled, MSB transmitted first, slave mode,
                // SCK idle low, sample on rising edge, clk bits [1:0] meaningless in slave mode
   SREG = sreg;
+  int size = PIC32_SERIAL.available();
+  char buffer[size];
+  PIC32_SERIAL.readBytes(buffer, size);
 }
 
 void loop() {
@@ -52,14 +55,20 @@ void loop() {
   //   PIC32_SERIAL.write(PRINT_EXPECTED_ACK);
   // }
 
-  if (PIC32_SERIAL.available() >= 7) {
-    char message[7];
-    PIC32_SERIAL.readBytes(message, 7);
+  int size = 5;
+  if (PIC32_SERIAL.available() >= size) {
+    char message[size];
+    PIC32_SERIAL.readBytes(message, size);
     LogInfo("msg received: ");
-    Serial.print(message);
+    // Serial.println(message);
+    for (int i = 0; i < size; i++) {
+      LogInfo(F("msg[%d] = %c\n"), i, (char)message[i]);
+    }
     LogInfo("\nend msg received\n\n");
     delay(100);
-    PIC32_SERIAL.write("Hello\n");
+    for (int i = 0; i < size; i++) {
+      PIC32_SERIAL.write(message[i]);
+    }
     // char response[40] = "**** this is arduino response 123 ****\n";
     // PIC32_SERIAL.write(response);
   }
