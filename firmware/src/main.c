@@ -60,6 +60,7 @@ typedef enum {
     SEND_START_VERIFY_ACK,
 } uart_send_t;
 uart_send_t sendState = SEND_START;
+uint8_t response = 0;
 
 void UARTComm(void);
 
@@ -94,8 +95,6 @@ int main(int argc, char** argv) {
 }
 
 void UARTComm(void) {
-    static uint8_t response = 0;
-
     if (uart5.isRxErrorDetected) {
         /* Send error message to console */
         uart5.isRxErrorDetected = false;
@@ -110,7 +109,7 @@ void UARTComm(void) {
         uint8_t sizeNextWrite = 0;
         uint8_t start = START; // once working, make this a local var and see what happens
 
-        SPIComm(&response);
+        SPI4_Write(&response, 1);
 
         switch (sendState) {
             case SEND_START:
@@ -159,6 +158,7 @@ void UARTComm(void) {
 void SPIComm(uint8_t* sendData) {
     uint8_t recData = 0;
     SPI4_WriteRead(sendData, 1, &recData, 1);
+    SPI4_Write(&recData, 1);
 }
 
 #if UART_BLOCKING

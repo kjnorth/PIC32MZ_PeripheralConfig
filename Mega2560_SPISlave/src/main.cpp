@@ -9,7 +9,7 @@
 #include "DataLog.h"
 
 // spi
-#define DUMMY_SPI_DATA 0xFFu
+#define DUMMY_SPI_DATA 0x7Eu
 #define PRINT_STR_MAX_LEN 255u
 #define PRINT_EXPECTED_ACK 0xACu
 volatile uint8_t rec, send, isDataUpdated;
@@ -29,8 +29,8 @@ uart_comm_t preState = commState;
 
 void setup() {
   Serial.begin(115200);
-  PIC32_SERIAL.begin(9600);
-  PIC32_SERIAL.setTimeout(10); // set 10 ms timeout, decrease as SW works
+  PIC32_SERIAL.begin(57600);
+  PIC32_SERIAL.setTimeout(1000); // set 10 ms timeout, decrease as SW works
   LogInfo("SPI Slave project begins\n");
 
   uint8_t sreg = SREG; // save the current status register (SREG) configuration
@@ -48,17 +48,19 @@ void setup() {
   SREG = sreg;
 
   LogInfo("comm state is %u\n", commState);
+  // uint8_t ack = ACK;
+  // PIC32_SERIAL.write(&ack, 1);
 }
 
 void UartComm(void) {
+  uint8_t ack = ACK;
+  int size = PIC32_SERIAL.available();
   if (commState != preState) {
     preState = commState;
-    // LogInfo("comm state is %u\n", commState);
+    LogInfo(F("comm state is %u\n"), commState);
   }
-  int size = PIC32_SERIAL.available();
   switch (commState) {
     case WAIT_START: {
-      // int size = PIC32_SERIAL.available();
       if (size > 0) {
         uint8_t byteRec = PIC32_SERIAL.read();
         if (byteRec == START) {
@@ -69,24 +71,17 @@ void UartComm(void) {
     }
     case SEND_ACK_START:
     // LogInfo("ack start\n");
-      PIC32_SERIAL.write((const char*)ACK);
+      PIC32_SERIAL.write(&ack, 1);
       commState = WAIT_MSG;
       break;
     case WAIT_MSG: {
-      // LogInfo("size %u\n", size);
       if (size > 0) {
-        uint8_t length = 7; // h, e, l, l, o, \n, \0
+        uint8_t length = 100; // h, e, l, l, o, \n, \0
         char buf[length];
         int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, length);
         for (int i = 0; i < bytesRead; i++) {
-          // Serial.write((int)buf[i]);
-          LogInfo(F("buf[%d] = %u\n"), i, (uint8_t)buf[i]);
-        }
-        if (bytesRead < size) {
-          // empty serial buffer
-          for (int i = 0; i < (size-bytesRead); i++) {
-            PIC32_SERIAL.read();
-          }
+          Serial.write(buf[i]);
+          // LogInfo(F("buf[%d] = %u\n"), i, (uint8_t)buf[i]);
         }
         commState = SEND_ACK_MSG;
       }
@@ -94,7 +89,7 @@ void UartComm(void) {
     }
     case SEND_ACK_MSG:
     // LogInfo("ack msg\n");
-      PIC32_SERIAL.write((const char*)ACK);
+      PIC32_SERIAL.write(&ack, 1);
       commState = WAIT_START;
       break;
   }
@@ -102,6 +97,7 @@ void UartComm(void) {
 
 void loop() {
   UartComm();
+  
   if (isDataUpdated) {
     isDataUpdated = 0;
     LogInfo("ack received by PIC 0x%02X\n", rec);
