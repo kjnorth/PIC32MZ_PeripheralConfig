@@ -103,13 +103,11 @@ void UARTComm(void) {
         /* send start byte or msg or toggle LED if ack not received correctly */
         uart5.isRxFinished = false;
 
-        //        char filler[255] = {0};
         char msg[] = "Hello\n";
-        char* nextWrite = (char*) &msg; //&filler;
+        char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
         uint8_t start = START; // once working, make this a local var and see what happens
 
-        SPI4_Write(&response, 1);
 
         switch (sendState) {
             case SEND_START:
@@ -123,27 +121,23 @@ void UARTComm(void) {
             }
             case SEND_MSG:
                 LED1_Set();
-//                if (response == ACK) {
+                if (response == ACK) {
                     nextWrite = (char*) &msg;
-                    sizeNextWrite = 7; //sizeof (msg);
+                    sizeNextWrite = sizeof (msg);
                     sendState = SEND_START_VERIFY_ACK;
-                    //                    LED1_Clear();
-//                } else {
-                    //                    LED1_Set();
-                    //                    SPIComm(response);
-                    //                    LED1_Toggle();
-//                }
+                } else {
+                    SPIComm(&response);
+                }
                 break;
             case SEND_START_VERIFY_ACK:
                 LED1_Clear();
-//                if (response == ACK) {
+                if (response == ACK) {
                     nextWrite = (char*) &start;
                     sizeNextWrite = 1;
                     sendState = SEND_MSG;
-//                } else {
-                    //                    SPIComm(response);
-                    //                    LED1_Toggle();
-//                }
+                } else {
+                    SPIComm(&response);
+                }
                 break;
         }
 
