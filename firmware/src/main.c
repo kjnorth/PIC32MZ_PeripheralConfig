@@ -57,7 +57,6 @@ typedef enum {
     SEND_START_VERIFY_ACK,
 } uart_send_t;
 uart_send_t sendState = SEND_START;
-uint8_t response = 0;
 
 void UARTComm(void);
 
@@ -92,6 +91,8 @@ int main(int argc, char** argv) {
 }
 
 void UARTComm(void) {
+    static uint8_t response = 0;
+
     if (uart5.isRxErrorDetected) {
         /* Send error message to console */
         uart5.isRxErrorDetected = false;
@@ -100,7 +101,7 @@ void UARTComm(void) {
         /* send start byte or msg or toggle LED if ack not received correctly */
         uart5.isRxFinished = false;
 
-        char msg[] = "Hello\n";
+        static char msg[] = "Hello mateymate I have been fixed\n";
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
         uint8_t start = START;
@@ -111,6 +112,7 @@ void UARTComm(void) {
                 LED1_Clear();
                 nextWrite = (char*) &start;
                 sizeNextWrite = 1;
+                response = 0;
                 sendState = SEND_MSG;
                 break;
             }
@@ -129,14 +131,15 @@ void UARTComm(void) {
                 if (response == ACK) {
                     nextWrite = (char*) &start;
                     sizeNextWrite = 1;
+                    response = 0;
                     sendState = SEND_MSG;
                 } else {
                     SPIComm(&response);
                 }
                 break;
         }
-
         UART5_Write(nextWrite, sizeNextWrite);
+
     } else if (uart5.isTxFinished) {
         /* initiate read of ack */
         uart5.isTxFinished = false;
@@ -147,7 +150,6 @@ void UARTComm(void) {
 void SPIComm(uint8_t* sendData) {
     uint8_t recData = 0;
     SPI4_WriteRead(sendData, 1, &recData, 1);
-    SPI4_Write(&recData, 1);
 }
 
 #if UART_BLOCKING

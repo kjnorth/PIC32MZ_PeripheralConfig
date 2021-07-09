@@ -5,13 +5,12 @@
         <group>
             <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/spi/spi_master/plib_spi4_master.h</file>
             <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/coretimer/plib_coretimer.c</file>
-            <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/uart/plib_uart1.c</file>
             <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/uart/plib_uart5.c</file>
-            <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/uart/plib_uart1.h</file>
             <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/interrupts.c</file>
             <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/coretimer/plib_coretimer.h</file>
-            <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/spi/spi_master/plib_spi4_master.c</file>
+            <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/uart/plib_uart5.h</file>
             <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/main.c</file>
+            <file>file:/C:/Users/Kodiak/Documents/Masterhaul/architecture_rework/alten_dev/PIC32MZ_PeripheralConfig/firmware/src/config/default/peripheral/spi/spi_master/plib_spi4_master.c</file>
         </group>
     </open-files>
 </project-private>
