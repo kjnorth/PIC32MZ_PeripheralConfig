@@ -40,13 +40,10 @@ typedef struct {
 } uart_flags_t;
 uart_flags_t uart5;
 void UART_FlagsInit(uart_flags_t* uart);
-
-uint8_t ack;
 #endif
 // **** **************************************** *****
 
-volatile uint32_t msTicks; // notes - callback is necessary to track time, do not give yourself access to coreTmr obj.. msTicks must be volatile!
-// why does it not work when using the coreTmr object??? confused
+volatile uint32_t msTicks = 0;
 void CORETIMER_InterruptCallback(uint32_t status, uintptr_t context);
 
 void SPIComm(uint8_t* sendData);
@@ -106,14 +103,12 @@ void UARTComm(void) {
         char msg[] = "Hello\n";
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
-        uint8_t start = START; // once working, make this a local var and see what happens
-
+        uint8_t start = START;
 
         switch (sendState) {
             case SEND_START:
             {
                 LED1_Clear();
-                //                uint8_t start = START;
                 nextWrite = (char*) &start;
                 sizeNextWrite = 1;
                 sendState = SEND_MSG;

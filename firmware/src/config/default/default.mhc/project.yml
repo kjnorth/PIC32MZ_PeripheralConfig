@@ -76,13 +76,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: B059D27563E70AEF78BECC3CB0F4C7CF
-- generatedChecksum: 80EF2C75A87EB409D607FF632B18EE71
+- generatedChecksum: 43EFEF089769568CE48B74087B3CDC78
   logicalPath: config/default/peripheral/uart
   name: plib_uart5.c
   physicalPath: peripheral/uart
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 80EF2C75A87EB409D607FF632B18EE71
+  userChecksum: 43EFEF089769568CE48B74087B3CDC78
 - generatedChecksum: 7806B30ECAE0D18D08CD583D8775530D
   logicalPath: config/default/stdio
   name: xc32_monitor.c

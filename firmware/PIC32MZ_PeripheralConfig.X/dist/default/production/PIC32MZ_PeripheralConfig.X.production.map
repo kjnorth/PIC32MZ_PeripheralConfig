@@ -5,25 +5,25 @@ Archive member included to satisfy reference by file (symbol)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(strlen.o)
                               build/default/production/_ext/1360937237/main.o (strlen)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-reset.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (_on_reset)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (_on_reset)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-bootstrap.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (_on_bootstrap)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (_on_bootstrap)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-nmi-handler.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (_nmi_handler)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (_nmi_handler)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(pic32_data_init.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (__pic32_data_init)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (__pic32_data_init)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(pic32_init_cache.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (__pic32_init_cache)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (__pic32_init_cache)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(pic32_init_tlb_ebi_sqi.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (__pic32_tlb_init_ebi_sqi)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (__pic32_tlb_init_ebi_sqi)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(general-exception.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (_general_exception_context)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (_general_exception_context)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(cache-err-exception.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (_cache_err_exception_context)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (_cache_err_exception_context)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(simple-tlb-refill-exception.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o (_simple_tlb_refill_exception_context)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o (_simple_tlb_refill_exception_context)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(defaultinterrupt.o)
-                              C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o (_DefaultInterrupt)
+                              C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o (_DefaultInterrupt)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(vsprintf.o)
                               build/default/production/_ext/1360937237/main.o (vsprintf)
 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(doprnt.o)
@@ -58,12 +58,10 @@ c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../
 Allocating common symbols
 Common symbol       size              file
 
-msTicks             0x4               build/default/production/_ext/1360937237/main.o
 errors              0x4               build/default/production/_ext/1360937237/main.o
 uart5Obj            0x34              build/default/production/_ext/1865657120/plib_uart5.o
 coreTmr             0x10              build/default/production/_ext/1249264884/plib_coretimer.o
 uart5               0x3               build/default/production/_ext/1360937237/main.o
-ack                 0x1               build/default/production/_ext/1360937237/main.o
 
 Microchip PIC32 Memory-Usage Report
 
@@ -364,31 +362,31 @@ Discarded input sections
                 0x0000000000000000       0x6c build/default/production/_ext/1360937237/main.o
  .text.UART_FlagsInit
                 0x0000000000000000       0x18 build/default/production/_ext/1360937237/main.o
- .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
- .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
- .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
- .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+ .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
+ .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
+ .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
+ .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
  .MIPS.abiflags
-                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
- .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
- .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
- .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
- .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
+                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
+ .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
+ .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
+ .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
+ .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
  .MIPS.abiflags
-                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
- .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
- .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
- .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
- .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
+ .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
+ .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
+ .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
+ .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
  .MIPS.abiflags
-                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
- .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
- .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
- .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
- .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
+                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
+ .text          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
+ .data          0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
+ .bss           0x0000000000000000        0x0 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
+ .reginfo       0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
  .MIPS.abiflags
-                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
- .discard       0x0000000000000000        0x4 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
+                0x0000000000000000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
+ .discard       0x0000000000000000        0x4 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
  .data          0x0000000000000000        0x0 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\pic32_software_reset.o
  .bss           0x0000000000000000        0x0 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\pic32_software_reset.o
  .reginfo       0x0000000000000000       0x18 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\pic32_software_reset.o
@@ -1302,16 +1300,16 @@ END GROUP
 
 .reset          0x00000000bfc00000      0x1b4
  *(.reset)
- .reset         0x00000000bfc00000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+ .reset         0x00000000bfc00000       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
                 0x00000000bfc00000                _reset
  *(.reset.startup)
  .reset.startup
-                0x00000000bfc00018      0x19c C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+                0x00000000bfc00018      0x19c C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
                 0x00000000bfc00018                _startup
 
 .bev_excpt      0x00000000bfc00380       0x10
  *(.bev_handler)
- .bev_handler   0x00000000bfc00380       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+ .bev_handler   0x00000000bfc00380       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
 
 .cache_init     0x00000000bfc004b0      0x1c0
  *(.cache_init)
@@ -1326,17 +1324,17 @@ END GROUP
                 0x000000009d000000       0x10
  *(.simple_tlb_refill_vector)
  .simple_tlb_refill_vector
-                0x000000009d000000       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+                0x000000009d000000       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
 
 .cache_err_excpt
                 0x000000009d000100       0x10
  *(.cache_err_vector)
  .cache_err_vector
-                0x000000009d000100       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+                0x000000009d000100       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
 
 .app_excpt      0x000000009d000180       0x10
  *(.gen_handler)
- .gen_handler   0x000000009d000180       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+ .gen_handler   0x000000009d000180       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
 
 .vectors        0x000000009d000200       0x78
                 0x000000009d000200                . = ALIGN (0x4)
@@ -2274,17 +2272,17 @@ END GROUP
                 0x0000000080000024                _sbss_begin = .
  *(.dynsbss)
  *(.sbss .sbss.* .gnu.linkonce.sb.*)
- .sbss          0x0000000080000024        0xc build/default/production/_ext/1360937237/main.o
+ .sbss          0x0000000080000024       0x10 build/default/production/_ext/1360937237/main.o
                 0x0000000080000028                response
                 0x000000008000002c                sendState
- *(.scommon)
- .scommon       0x0000000080000030        0xc build/default/production/_ext/1360937237/main.o
                 0x0000000080000030                msTicks
+ *(.scommon)
+ .scommon       0x0000000080000034        0x7 build/default/production/_ext/1360937237/main.o
                 0x0000000080000034                errors
                 0x0000000080000038                uart5
-                0x000000008000003b                ack
-                0x000000008000003c                _sbss_end = .
+                0x000000008000003b                _sbss_end = .
                 0x000000008000003c                . = ALIGN (0x4)
+ *fill*         0x000000008000003b        0x1 
 
 .bss            0x000000008000003c       0x44
  *(.dynbss)
@@ -2506,7 +2504,7 @@ END GROUP
  *.elf(.debug_pubnames)
  *(.debug_pubnames)
 
-.debug_info     0x0000000000000000   0x44b92e
+.debug_info     0x0000000000000000   0x44b91b
  *.elf(.debug_info .gnu.linkonce.wi.*)
  *(.debug_info .gnu.linkonce.wi.*)
  .debug_info    0x0000000000000000    0x5b68a build/default/production/_ext/1982400153/plib_adchs.o
@@ -2521,24 +2519,24 @@ END GROUP
  .debug_info    0x00000000002db60d    0x5b3f7 build/default/production/_ext/1171490990/initialization.o
  .debug_info    0x0000000000336a04    0x5b433 build/default/production/_ext/1171490990/interrupts.o
  .debug_info    0x0000000000391e37    0x5b4f9 build/default/production/_ext/1171490990/exceptions.o
- .debug_info    0x00000000003ed330    0x5ba23 build/default/production/_ext/1360937237/main.o
- .debug_info    0x0000000000448d53       0x3f c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-reset.o)
- .debug_info    0x0000000000448d92       0x3f c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-bootstrap.o)
- .debug_info    0x0000000000448dd1       0x40 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(defaultinterrupt.o)
- .debug_info    0x0000000000448e11       0x3e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(vsprintf.o)
- .debug_info    0x0000000000448e4f       0xba c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(doprnt.o)
- .debug_info    0x0000000000448f09       0x48 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_fputc_simple.o)
- .debug_info    0x0000000000448f51       0x3e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_flsbuf_simple.o)
- .debug_info    0x0000000000448f8f       0x3e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libmfd.a(s_frexp.o)
- .debug_info    0x0000000000448fcd      0x33c c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_lshrdi3.o)
- .debug_info    0x0000000000449309      0x304 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_cmpdi2.o)
- .debug_info    0x000000000044960d      0x8aa c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_divdi3.o)
- .debug_info    0x0000000000449eb7      0x907 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_moddi3.o)
- .debug_info    0x000000000044a7be      0x85c c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_udivdi3.o)
- .debug_info    0x000000000044b01a      0x8d4 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_umoddi3.o)
- .debug_info    0x000000000044b8ee       0x40 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(write.o)
+ .debug_info    0x00000000003ed330    0x5ba10 build/default/production/_ext/1360937237/main.o
+ .debug_info    0x0000000000448d40       0x3f c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-reset.o)
+ .debug_info    0x0000000000448d7f       0x3f c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-bootstrap.o)
+ .debug_info    0x0000000000448dbe       0x40 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(defaultinterrupt.o)
+ .debug_info    0x0000000000448dfe       0x3e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(vsprintf.o)
+ .debug_info    0x0000000000448e3c       0xba c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(doprnt.o)
+ .debug_info    0x0000000000448ef6       0x48 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_fputc_simple.o)
+ .debug_info    0x0000000000448f3e       0x3e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_flsbuf_simple.o)
+ .debug_info    0x0000000000448f7c       0x3e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libmfd.a(s_frexp.o)
+ .debug_info    0x0000000000448fba      0x33c c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_lshrdi3.o)
+ .debug_info    0x00000000004492f6      0x304 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_cmpdi2.o)
+ .debug_info    0x00000000004495fa      0x8aa c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_divdi3.o)
+ .debug_info    0x0000000000449ea4      0x907 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_moddi3.o)
+ .debug_info    0x000000000044a7ab      0x85c c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_udivdi3.o)
+ .debug_info    0x000000000044b007      0x8d4 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_umoddi3.o)
+ .debug_info    0x000000000044b8db       0x40 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(write.o)
 
-.debug_abbrev   0x0000000000000000     0x280a
+.debug_abbrev   0x0000000000000000     0x27f7
  *.elf(.debug_abbrev)
  *(.debug_abbrev)
  .debug_abbrev  0x0000000000000000      0x223 build/default/production/_ext/1982400153/plib_adchs.o
@@ -2553,22 +2551,22 @@ END GROUP
  .debug_abbrev  0x00000000000012bf      0x1c8 build/default/production/_ext/1171490990/initialization.o
  .debug_abbrev  0x0000000000001487      0x199 build/default/production/_ext/1171490990/interrupts.o
  .debug_abbrev  0x0000000000001620      0x1f2 build/default/production/_ext/1171490990/exceptions.o
- .debug_abbrev  0x0000000000001812      0x38c build/default/production/_ext/1360937237/main.o
- .debug_abbrev  0x0000000000001b9e       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-reset.o)
- .debug_abbrev  0x0000000000001bcc       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-bootstrap.o)
- .debug_abbrev  0x0000000000001bfa       0x31 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(defaultinterrupt.o)
- .debug_abbrev  0x0000000000001c2b       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(vsprintf.o)
- .debug_abbrev  0x0000000000001c59       0x92 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(doprnt.o)
- .debug_abbrev  0x0000000000001ceb       0x37 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_fputc_simple.o)
- .debug_abbrev  0x0000000000001d22       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_flsbuf_simple.o)
- .debug_abbrev  0x0000000000001d50       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libmfd.a(s_frexp.o)
- .debug_abbrev  0x0000000000001d7e      0x17e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_lshrdi3.o)
- .debug_abbrev  0x0000000000001efc      0x139 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_cmpdi2.o)
- .debug_abbrev  0x0000000000002035      0x1ec c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_divdi3.o)
- .debug_abbrev  0x0000000000002221      0x1f5 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_moddi3.o)
- .debug_abbrev  0x0000000000002416      0x1d8 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_udivdi3.o)
- .debug_abbrev  0x00000000000025ee      0x1ee c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_umoddi3.o)
- .debug_abbrev  0x00000000000027dc       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(write.o)
+ .debug_abbrev  0x0000000000001812      0x379 build/default/production/_ext/1360937237/main.o
+ .debug_abbrev  0x0000000000001b8b       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-reset.o)
+ .debug_abbrev  0x0000000000001bb9       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(default-on-bootstrap.o)
+ .debug_abbrev  0x0000000000001be7       0x31 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(defaultinterrupt.o)
+ .debug_abbrev  0x0000000000001c18       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(vsprintf.o)
+ .debug_abbrev  0x0000000000001c46       0x92 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(doprnt.o)
+ .debug_abbrev  0x0000000000001cd8       0x37 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_fputc_simple.o)
+ .debug_abbrev  0x0000000000001d0f       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libc.a(_flsbuf_simple.o)
+ .debug_abbrev  0x0000000000001d3d       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libmfd.a(s_frexp.o)
+ .debug_abbrev  0x0000000000001d6b      0x17e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_lshrdi3.o)
+ .debug_abbrev  0x0000000000001ee9      0x139 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_cmpdi2.o)
+ .debug_abbrev  0x0000000000002022      0x1ec c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_divdi3.o)
+ .debug_abbrev  0x000000000000220e      0x1f5 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_moddi3.o)
+ .debug_abbrev  0x0000000000002403      0x1d8 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_udivdi3.o)
+ .debug_abbrev  0x00000000000025db      0x1ee c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a(_umoddi3.o)
+ .debug_abbrev  0x00000000000027c9       0x2e c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\libpic32.a(write.o)
 
 .debug_line     0x0000000000000000     0x6746
  *.elf(.debug_line)
@@ -2777,13 +2775,13 @@ END GROUP
  .gnu.attributes
                 0x00000000000000d0       0x10 build/default/production/_ext/1360937237/main.o
  .gnu.attributes
-                0x00000000000000e0       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+                0x00000000000000e0       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
  .gnu.attributes
-                0x00000000000000f0       0x10 C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
+                0x00000000000000f0       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
  .gnu.attributes
-                0x0000000000000100       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x0000000000000100       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
  .gnu.attributes
-                0x0000000000000110       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
+                0x0000000000000110       0x10 C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
  .gnu.attributes
                 0x0000000000000120       0x10 c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\pic32_software_reset.o
  .gnu.attributes
@@ -2908,10 +2906,10 @@ END GROUP
                 0x00000000bfc006d0                __pic32_tlb_init_values_end = ABSOLUTE (.)
                 0x00000000bfc00678                __pic32_tlb_init_values_count = 0x8
                 0x0000000000000200                _min_heap_size = 0x200
-LOAD C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
-LOAD C:\Users\Kodiak\AppData\Local\Temp\cceMOMli.o
-LOAD C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
-LOAD C:\Users\Kodiak\AppData\Local\Temp\ccEZjRZ1.o
+LOAD C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
+LOAD C:\Users\Kodiak\AppData\Local\Temp\ccUsS2il.o
+LOAD C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
+LOAD C:\Users\Kodiak\AppData\Local\Temp\ccsWE59L.o
 LOAD c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/../../../../pic32mx/lib/fpu64\pic32_software_reset.o
 LOAD c:/program files/microchip/xc32/v3.00/bin/bin/../../lib/gcc/pic32mx/8.3.1/fpu64\libgcc.a
 START GROUP
@@ -2940,37 +2938,37 @@ LOAD data_init
 .__vector_offset_BF810540_data
                 0x00000000bf810540      0x1b0
  .__vector_offset_BF810540_data
-                0x00000000bf810540      0x1b0 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf810540      0x1b0 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .__vector_offset_BF8106F4_data
                 0x00000000bf8106f4      0x148
  .__vector_offset_BF8106F4_data
-                0x00000000bf8106f4      0x148 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf8106f4      0x148 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .__vector_offset_BF810874_data
                 0x00000000bf810874       0x18
  .__vector_offset_BF810874_data
-                0x00000000bf810874       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf810874       0x18 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .__vector_offset_BF810858_data
                 0x00000000bf810858       0x14
  .__vector_offset_BF810858_data
-                0x00000000bf810858       0x14 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf810858       0x14 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .__vector_offset_BF810840_data
                 0x00000000bf810840        0xc
  .__vector_offset_BF810840_data
-                0x00000000bf810840        0xc C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf810840        0xc C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .__vector_offset_BF810850_data
                 0x00000000bf810850        0x4
  .__vector_offset_BF810850_data
-                0x00000000bf810850        0x4 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf810850        0x4 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .__vector_offset_BF810894_data
                 0x00000000bf810894        0x4
  .__vector_offset_BF810894_data
-                0x00000000bf810894        0x4 C:\Users\Kodiak\AppData\Local\Temp\ccIyJ3JU.o
+                0x00000000bf810894        0x4 C:\Users\Kodiak\AppData\Local\Temp\ccAw2trW.o
 
 .bss            0x0000000080000080       0x34
  .bss           0x0000000080000080       0x34 build/default/production/_ext/513455433/plib_i2c1_master.o
@@ -3173,7 +3171,7 @@ LOAD data_init
 .text.main_entry
                 0x000000009d002810       0x54
  .text.main_entry
-                0x000000009d002810       0x54 C:\Users\Kodiak\AppData\Local\Temp\ccAqCara.o
+                0x000000009d002810       0x54 C:\Users\Kodiak\AppData\Local\Temp\ccEmGqz2.o
                 0x000000009d002844                __crt0_exit
 
 .text.CORETIMER_Initialize

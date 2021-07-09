@@ -29,8 +29,7 @@ uart_comm_t preState = commState;
 
 void setup() {
   Serial.begin(115200);
-  PIC32_SERIAL.begin(57600);
-  PIC32_SERIAL.setTimeout(1000); // set 10 ms timeout, decrease as SW works
+  PIC32_SERIAL.begin(115200);
   LogInfo("SPI Slave project begins\n");
 
   uint8_t sreg = SREG; // save the current status register (SREG) configuration
@@ -48,8 +47,6 @@ void setup() {
   SREG = sreg;
 
   LogInfo("comm state is %u\n", commState);
-  // uint8_t ack = ACK;
-  // PIC32_SERIAL.write(&ack, 1);
 }
 
 void UartComm(void) {
@@ -70,25 +67,22 @@ void UartComm(void) {
       break;
     }
     case SEND_ACK_START:
-    // LogInfo("ack start\n");
       PIC32_SERIAL.write(&ack, 1);
       commState = WAIT_MSG;
       break;
     case WAIT_MSG: {
       if (size > 0) {
-        uint8_t length = 100; // h, e, l, l, o, \n, \0
+        uint8_t length = 255;
         char buf[length];
         int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, length);
         for (int i = 0; i < bytesRead; i++) {
           Serial.write(buf[i]);
-          // LogInfo(F("buf[%d] = %u\n"), i, (uint8_t)buf[i]);
         }
         commState = SEND_ACK_MSG;
       }
       break;
     }
     case SEND_ACK_MSG:
-    // LogInfo("ack msg\n");
       PIC32_SERIAL.write(&ack, 1);
       commState = WAIT_START;
       break;
@@ -100,7 +94,7 @@ void loop() {
   
   if (isDataUpdated) {
     isDataUpdated = 0;
-    LogInfo("ack received by PIC 0x%02X\n", rec);
+    LogInfo("incorrect ack received by PIC 0x%02X\n", rec);
   }
 }
 
