@@ -1,11 +1,11 @@
 configName: default
 folderName: PIC32MZ_PeripheralConfig
 format_version: v1.0
-frameworkPath: ..\..\..\..\Harmony3
+frameworkPath: C:\Harmony3
 processor: PIC32MZ2048EFM144
 projectName: PIC32MZ_PeripheralConfig
 settings:
-  PackageFilter: bsp;core;csp;quick_docs;usb
+  PackageFilter: bsp;core;core_apps_pic32mz_ef;csp;csp_apps_pic32mz_ef;quick_docs;usb
   FORCE_OPTIMIZATION: 'false'
   GENERATE_BACKUP: 'true'
   TRUSTZONE: 'false'
