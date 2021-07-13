@@ -16,7 +16,6 @@
 #include "peripheral/spi/spi_master/plib_spi4_master.h"
 #include "definitions.h"
 
-#define PRINT_STR_MAX_LEN 255u
 #define PRINT_WAIT_FOR_ACK_DELAY 5u // ms
 #define PRINT_WAIT_FOR_ACK_NUM_RETRIES 3u
 #define PRINT_EXPECTED_ACK 0xACu
@@ -39,7 +38,6 @@ typedef struct {
     volatile bool isRxFinished;
 } uart_flags_t;
 uart_flags_t uart5;
-void UART_FlagsInit(uart_flags_t* uart);
 #endif
 // **** **************************************** *****
 
@@ -50,13 +48,6 @@ void SPIComm(uint8_t* sendData);
 
 #define START 0xA5u
 #define ACK 0xF9u
-
-typedef enum {
-    SEND_START,
-    SEND_MSG,
-    SEND_START_VERIFY_ACK,
-} uart_send_t;
-uart_send_t sendState = SEND_START;
 
 void UARTComm(void);
 
@@ -73,7 +64,6 @@ int main(int argc, char** argv) {
 #if UART_BLOCKING
     Print_BlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
 #else
-    UART_FlagsInit(&uart5);
     UART5_WriteCallbackRegister(UART5_WriteCallback, 0);
     UART5_ReadCallbackRegister(UART5_ReadCallback, 0);
 #endif
@@ -138,7 +128,7 @@ void UARTComm(void) {
                 }
                 break;
         }
-        UART5_Write(nextWrite, sizeNextWrite);
+        UART5_Write(nextWrite, sizeNextWrite); // check if write is busy!
 
     } else if (uart5.isTxFinished) {
         /* initiate read of ack */
@@ -199,32 +189,6 @@ bool Print_NonBlockingUART(const char* fmt, ...) {
         returnVal = true;
     }
     return returnVal;
-}
-
-/**
- * function called when UART5 finishes transmitting data I THINK
- */
-void UART5_WriteCallback(uintptr_t context) {
-    uart5.isTxFinished = true;
-}
-
-/**
- * function called when UART5 finishes reading data I THINK
- */
-void UART5_ReadCallback(uintptr_t context) {
-    errors = UART5_ErrorGet();
-    if (errors != UART_ERROR_NONE) {
-        /* ErrorGet clears errors, set error flag to notify console */
-        uart5.isRxErrorDetected = true;
-    } else {
-        uart5.isRxFinished = true;
-    }
-}
-
-void UART_FlagsInit(uart_flags_t* uart) {
-    uart->isRxErrorDetected = false;
-    uart->isRxFinished = true;
-    uart->isTxFinished = false;
 }
 
 #endif

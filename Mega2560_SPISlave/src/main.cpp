@@ -45,6 +45,10 @@ void setup() {
   SPCR = 0xC0; // SPI interrupts enabled, SPI peripheral enabled, MSB transmitted first, slave mode,
                // SCK idle low, sample on rising edge, clk bits [1:0] meaningless in slave mode
   SREG = sreg;
+
+  char msg[] = "I am equal\n";
+  const char* fmt = msg;
+  LogInfo(F("sizeof msg is %u, sizeof fmt is %u, strlen fmt is %u\n"), sizeof(msg), sizeof(fmt), strlen(fmt));
 }
 
 void UartComm(void) {

@@ -46,6 +46,7 @@
           <itemPath>../src/config/default/interrupts.h</itemPath>
         </logicalFolder>
       </logicalFolder>
+      <itemPath>../src/Print.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -100,6 +101,7 @@
         </logicalFolder>
       </logicalFolder>
       <itemPath>../src/main.c</itemPath>
+      <itemPath>../src/Print.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
