@@ -16,6 +16,7 @@
  */
 
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "Print.h"
@@ -40,8 +41,8 @@ print_queue_t Queue;
 
 typedef enum {
     SEND_START,
-    SEND_MSG,
-    SEND_START_VERIFY_ACK,
+    VERIFY_ACK_START_SEND_MSG,
+    VERIFY_ACK_MSG,
 } print_state_t;
 print_state_t printState;
 
@@ -68,7 +69,7 @@ void Print_Init(void) {
     printState = SEND_START;
     Uart5.isRxErrorDetected = false;
     Uart5.isTxFinished = false;
-    Uart5.isRxFinished = true; // init to true for Print_Task to kick off first message that is enqueued
+    Uart5.isRxFinished = true; // init to true so Print_Task kicks off the first message that is enqueued
     UART5_WriteCallbackRegister(UART5_WriteCallback, 0);
     UART5_ReadCallbackRegister(UART5_ReadCallback, 0);
 }
@@ -100,65 +101,69 @@ bool Print_IsQueueFull(void) {
     return (Queue.size >= PRINT_MAX_MSGS);
 }
 
+/**
+ * NOTE:
+ * this looks like it is setup quite well. However, if the reception of an ACK fails,
+ * the function will get stuck in a limbo state. Should fix. Should implement a timeout feature
+ * Perhaps only set isRxFinished to false once data is sent to avoid getting hung up
+ */
 void Print_Task(void) {
     static uint8_t response = 0;
 
-    // wait for a message to be enqueued
-    if (Queue.size > 0) { // THIS WILL WORK, BUT ACK IS NOT CHECKED UNTIL ANOTHER MESSAGE IS ENQUEUED.. OKAY WITH THAT?
-        if (uart5.isRxErrorDetected) {
-            uart5.isRxErrorDetected = false;
-            // do something to indicate that an error occurred
-            //        LED1_Set();
-        } else if (uart5.isRxFinished) {
-            /* send start byte or msg or toggle LED if ack not received correctly */
-            uart5.isRxFinished = false;
+    if (Uart5.isRxErrorDetected) {
+        Uart5.isRxErrorDetected = false;
+        // do something to indicate that an error occurred
+        //        LED1_Set();
+    } else if (Uart5.isRxFinished) {
+        /* send start byte or msg or toggle LED if ack not received correctly */
+        Uart5.isRxFinished = false;
 
-            char* nextWrite = NULL;
-            uint8_t sizeNextWrite = 0;
-            const static uint8_t startByte = PRINT_START; // static so memory is not erased before UART can write it
+        char* nextWrite = NULL;
+        uint8_t sizeNextWrite = 0;
+        const static uint8_t startByte = PRINT_START; // static so memory is not erased before UART can write it
 
-            switch (printState) {
-                case SEND_START:
+        switch (printState) {
+            case SEND_START:
+                if (Queue.size > 0) {
+                    // queue is non-empty, initiate the send of a message
                     nextWrite = (char*) &startByte;
                     sizeNextWrite = 1;
                     response = 0;
-                    printState = SEND_MSG;
-                    break;
-                case SEND_MSG:
-                    if (response == PRINT_ACK) {
-                        // TODO: create a dequeue function to clean up this case AFTER IT WORKS
-                        nextWrite = (char*) Queue.msgQueue[Queue.index]; // need to cast?
-                        sizeNextWrite = Queue.msgSize[Queue.index];
-                        Queue.index++;
-                        if (Queue.index >= PRINT_MAX_MSGS) {
-                            // perform the modulo operation when necessary
-                            Queue.index = Queue.index % PRINT_MAX_MSGS;
-                        }
-                        Queue.size--;
-                        printState = SEND_START_VERIFY_ACK;
-                    } else {
-                        LED1_Set();
+                    UART5_Write(nextWrite, sizeNextWrite);
+                    printState = VERIFY_ACK_START_SEND_MSG;
+                }
+                break;
+            case VERIFY_ACK_START_SEND_MSG:
+                if (response == PRINT_ACK) {
+                    // TODO: create a dequeue function to clean up this case AFTER IT WORKS
+                    nextWrite = (char*) Queue.msgQueue[Queue.index]; // need to cast?
+                    sizeNextWrite = Queue.msgSize[Queue.index];
+                    Queue.index++;
+                    if (Queue.index >= PRINT_MAX_MSGS) {
+                        // perform the modulo operation when necessary
+                        Queue.index = Queue.index % PRINT_MAX_MSGS;
                     }
-                    break;
-                case SEND_START_VERIFY_ACK:
-                    if (response == PRINT_ACK) {
-                        nextWrite = (char*) &startByte;
-                        sizeNextWrite = 1;
-                        response = 0;
-                        printState = SEND_MSG;
-                    } else {
-                        LED1_Set();
-                    }
-                    break;
-            }
-            // check if write is busy?.. then what to do if it is busy? rxFinished false now
-            UART5_Write(nextWrite, sizeNextWrite);
-
-        } else if (uart5.isTxFinished) {
-            /* initiate read of ack */
-            uart5.isTxFinished = false;
-            UART5_Read(&response, 1);
+                    Queue.size--;
+                    UART5_Write(nextWrite, sizeNextWrite);
+                    printState = VERIFY_ACK_MSG;
+                } else {
+                    // error occurred
+                    LED1_Set();
+                }
+                break;
+            case VERIFY_ACK_MSG:
+                if (response == PRINT_ACK) {
+                    printState = SEND_START;
+                } else {
+                    // error occurred
+                    LED1_Set();
+                }
+                break;
         }
+    } else if (Uart5.isTxFinished) {
+        /* initiate read of ack */
+        Uart5.isTxFinished = false;
+        UART5_Read(&response, 1);
     }
 }
 
@@ -178,6 +183,6 @@ void UART5_ReadCallback(uintptr_t context) {
         /* ErrorGet clears errors, set error flag to notify console */
         Uart5.isRxErrorDetected = true;
     } else {
-        uart5.isRxFinished = true;
+        Uart5.isRxFinished = true;
     }
 }

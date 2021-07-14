@@ -15,6 +15,7 @@
 #include "peripheral/coretimer/plib_coretimer.h"
 #include "peripheral/spi/spi_master/plib_spi4_master.h"
 #include "definitions.h"
+#include "Print.h"
 
 #define PRINT_WAIT_FOR_ACK_DELAY 5u // ms
 #define PRINT_WAIT_FOR_ACK_NUM_RETRIES 3u
@@ -26,18 +27,7 @@
 #if UART_BLOCKING
 void Print_BlockingUART(const char* fmt, ...);
 #else
-bool Print_NonBlockingUART(const char* fmt, ...);
-void UART5_WriteCallback(uintptr_t context);
-void UART5_ReadCallback(uintptr_t context);
 
-UART_ERROR errors;
-
-typedef struct {
-    volatile bool isRxErrorDetected;
-    volatile bool isTxFinished;
-    volatile bool isRxFinished;
-} uart_flags_t;
-uart_flags_t uart5;
 #endif
 // **** **************************************** *****
 
@@ -46,16 +36,12 @@ void CORETIMER_InterruptCallback(uint32_t status, uintptr_t context);
 
 void SPIComm(uint8_t* sendData);
 
-#define START 0xA5u
-#define ACK 0xF9u
-
-void UARTComm(void);
-
 /*
  * 
  */
 int main(int argc, char** argv) {
     SYS_Initialize(NULL);
+    Print_Init();
     CORETIMER_CallbackSet(CORETIMER_InterruptCallback, (uintptr_t) NULL);
     CORETIMER_Start();
     LED1_Clear();
@@ -64,77 +50,20 @@ int main(int argc, char** argv) {
 #if UART_BLOCKING
     Print_BlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
 #else
-    UART5_WriteCallbackRegister(UART5_WriteCallback, 0);
-    UART5_ReadCallbackRegister(UART5_ReadCallback, 0);
 #endif
+    
+    Print_EnqueueMsg("Hola Arduino from the new print module\n");
 
     while (1) {
         unsigned long ct = msTicks;
         static unsigned long pt = 0;
         if (ct - pt >= 100) {
             pt = ct;
-            UARTComm();
         }
+        Print_Task();
     }
 
     return (EXIT_SUCCESS);
-}
-
-void UARTComm(void) {
-    static uint8_t response = 0;
-
-    if (uart5.isRxErrorDetected) {
-        /* Send error message to console */
-        uart5.isRxErrorDetected = false;
-        //        LED1_Set();
-    } else if (uart5.isRxFinished) {
-        /* send start byte or msg or toggle LED if ack not received correctly */
-        uart5.isRxFinished = false;
-
-        static char msg[] = "Hello mateymate I have been fixed\n";
-        char* nextWrite = NULL;
-        uint8_t sizeNextWrite = 0;
-        uint8_t start = START;
-
-        switch (sendState) {
-            case SEND_START:
-            {
-                LED1_Clear();
-                nextWrite = (char*) &start;
-                sizeNextWrite = 1;
-                response = 0;
-                sendState = SEND_MSG;
-                break;
-            }
-            case SEND_MSG:
-                LED1_Set();
-                if (response == ACK) {
-                    nextWrite = (char*) &msg;
-                    sizeNextWrite = sizeof (msg);
-                    sendState = SEND_START_VERIFY_ACK;
-                } else {
-                    SPIComm(&response);
-                }
-                break;
-            case SEND_START_VERIFY_ACK:
-                LED1_Clear();
-                if (response == ACK) {
-                    nextWrite = (char*) &start;
-                    sizeNextWrite = 1;
-                    response = 0;
-                    sendState = SEND_MSG;
-                } else {
-                    SPIComm(&response);
-                }
-                break;
-        }
-        UART5_Write(nextWrite, sizeNextWrite); // check if write is busy!
-
-    } else if (uart5.isTxFinished) {
-        /* initiate read of ack */
-        uart5.isTxFinished = false;
-        UART5_Read(&response, 1);
-    }
 }
 
 void SPIComm(uint8_t* sendData) {
@@ -174,22 +103,6 @@ void Print_BlockingUART(const char* fmt, ...) {
 }
 
 #else
-
-bool Print_NonBlockingUART(const char* fmt, ...) {
-    bool returnVal = false;
-    if (!UART5_WriteIsBusy()) {
-        // format message based on the fmt passed along with variadic arguments
-        char message[PRINT_STR_MAX_LEN];
-        va_list args;
-        va_start(args, fmt);
-        vsprintf(message, fmt, args);
-        // write message via UART5
-        UART5_Write(message, strlen(message));
-        va_end(args);
-        returnVal = true;
-    }
-    return returnVal;
-}
 
 #endif
 

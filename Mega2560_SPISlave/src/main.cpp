@@ -45,15 +45,17 @@ void setup() {
   SPCR = 0xC0; // SPI interrupts enabled, SPI peripheral enabled, MSB transmitted first, slave mode,
                // SCK idle low, sample on rising edge, clk bits [1:0] meaningless in slave mode
   SREG = sreg;
-
-  char msg[] = "I am equal\n";
-  const char* fmt = msg;
-  LogInfo(F("sizeof msg is %u, sizeof fmt is %u, strlen fmt is %u\n"), sizeof(msg), sizeof(fmt), strlen(fmt));
+  LogInfo("commState is %u\n", commState);
 }
 
 void UartComm(void) {
   uint8_t ack = ACK;
   int size = PIC32_SERIAL.available();
+
+  if (commState != preState) {
+    preState = commState;
+    LogInfo("commState is %u\n", commState);
+  }
 
   switch (commState) {
     case WAIT_START: {
