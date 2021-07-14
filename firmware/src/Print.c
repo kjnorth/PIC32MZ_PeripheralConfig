@@ -63,6 +63,11 @@ void UART5_WriteCallback(uintptr_t context);
 void UART5_ReadCallback(uintptr_t context);
 // **** END MODULE FUNCTION PROTOTYPES ****
 
+void SPIComm(uint8_t sendData) {
+    uint8_t recData = 0;
+    SPI4_WriteRead(&sendData, 1, &recData, 1);
+}
+
 void Print_Init(void) {
     Queue.index = 0;
     Queue.size = 0;
@@ -83,18 +88,28 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vsprintf(message, fmt, args);
-    va_end(args);
     uint16_t sizeMessage = strlen(message); // do I want +1 to send \0 char? what happens if msg contains a 0 in the middle
     // when receiver is looking for \0 as a terminator?
+    // I DO WANT TO SEND A NULL TERMINATOR
+    va_end(args);
 
     if ((sizeMessage <= PRINT_MAX_STR_LEN) && !Print_IsQueueFull()) {
         // copy the message into the queue
-        memcpy(Queue.msgQueue[Queue.index], message, sizeMessage);
-        Queue.msgSize[Queue.index] = sizeMessage;
+        uint8_t messageToAddIndex = Queue.index + Queue.size;
+        if (messageToAddIndex >= PRINT_MAX_MSGS) {
+            // perform the modulo operation when necessary
+            messageToAddIndex = messageToAddIndex % PRINT_MAX_MSGS;
+        }
+        memcpy(Queue.msgQueue[messageToAddIndex], message, sizeMessage);
+        Queue.msgSize[messageToAddIndex] = sizeMessage;
         Queue.size++;
         returnVal = true;
     }
     return returnVal;
+}
+
+bool Print_IsQueueEmpty(void) {
+    return (Queue.size == 0);
 }
 
 bool Print_IsQueueFull(void) {
@@ -110,13 +125,19 @@ bool Print_IsQueueFull(void) {
 void Print_Task(void) {
     static uint8_t response = 0;
 
+//    static print_state_t preState = 0;
+//    if (printState != preState) {
+//        preState = printState;
+//        SPIComm((uint8_t) printState);
+//    }
+
     if (Uart5.isRxErrorDetected) {
         Uart5.isRxErrorDetected = false;
         // do something to indicate that an error occurred
         //        LED1_Set();
     } else if (Uart5.isRxFinished) {
         /* send start byte or msg or toggle LED if ack not received correctly */
-        Uart5.isRxFinished = false;
+        //        Uart5.isRxFinished = false; // do I like the current configuration?
 
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
@@ -124,17 +145,23 @@ void Print_Task(void) {
 
         switch (printState) {
             case SEND_START:
-                if (Queue.size > 0) {
+                if (!Print_IsQueueEmpty()) {
+                    LED1_Set();
                     // queue is non-empty, initiate the send of a message
                     nextWrite = (char*) &startByte;
                     sizeNextWrite = 1;
-                    response = 0;
                     UART5_Write(nextWrite, sizeNextWrite);
+                    Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
                     printState = VERIFY_ACK_START_SEND_MSG;
+                } else {
+                    LED1_Clear();
                 }
                 break;
             case VERIFY_ACK_START_SEND_MSG:
+                //                LED1_Clear();
+
                 if (response == PRINT_ACK) {
+                    response = 0;
                     // TODO: create a dequeue function to clean up this case AFTER IT WORKS
                     nextWrite = (char*) Queue.msgQueue[Queue.index]; // need to cast?
                     sizeNextWrite = Queue.msgSize[Queue.index];
@@ -145,18 +172,22 @@ void Print_Task(void) {
                     }
                     Queue.size--;
                     UART5_Write(nextWrite, sizeNextWrite);
+                    Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
                     printState = VERIFY_ACK_MSG;
                 } else {
                     // error occurred
-                    LED1_Set();
+                    //                    LED1_Set();
                 }
                 break;
             case VERIFY_ACK_MSG:
+                LED1_Clear();
+
                 if (response == PRINT_ACK) {
+                    response = 0;
                     printState = SEND_START;
                 } else {
                     // error occurred
-                    LED1_Set();
+                    //                    LED1_Set();
                 }
                 break;
         }

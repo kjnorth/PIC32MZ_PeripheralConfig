@@ -27,6 +27,7 @@ extern "C" {
 
     void Print_Init(void);
     bool Print_EnqueueMsg(const char* fmt, ...); // call with a message to print
+    bool Print_IsQueueEmpty(void);
     bool Print_IsQueueFull(void);
     void Print_Task(void); // call continuously to empty print queue as messages are enqueued
 

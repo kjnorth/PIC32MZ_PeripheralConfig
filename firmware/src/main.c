@@ -11,9 +11,6 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "peripheral/gpio/plib_gpio.h"
-#include "peripheral/coretimer/plib_coretimer.h"
-#include "peripheral/spi/spi_master/plib_spi4_master.h"
 #include "definitions.h"
 #include "Print.h"
 
@@ -34,8 +31,6 @@ void Print_BlockingUART(const char* fmt, ...);
 volatile uint32_t msTicks = 0;
 void CORETIMER_InterruptCallback(uint32_t status, uintptr_t context);
 
-void SPIComm(uint8_t* sendData);
-
 /*
  * 
  */
@@ -51,8 +46,17 @@ int main(int argc, char** argv) {
     Print_BlockingUART("Hello Arduino, %d, %u, %0.3f\n", (int) - 12, (uint8_t) 158, 54.368);
 #else
 #endif
-    
+
+    uint8_t four = 4;
+    uint8_t zero = 0;
     Print_EnqueueMsg("Hola Arduino from the new print module\n");
+    Print_EnqueueMsg("I am trying my best\n");
+    Print_EnqueueMsg("29 is all that I have\n");
+    Print_EnqueueMsg("This is round %u\n", four);
+    Print_EnqueueMsg("What if there is a %u involved?\n", zero);
+    Print_EnqueueMsg("this should NOT get sent\n");
+
+
 
     while (1) {
         unsigned long ct = msTicks;
@@ -64,11 +68,6 @@ int main(int argc, char** argv) {
     }
 
     return (EXIT_SUCCESS);
-}
-
-void SPIComm(uint8_t* sendData) {
-    uint8_t recData = 0;
-    SPI4_WriteRead(sendData, 1, &recData, 1);
 }
 
 #if UART_BLOCKING

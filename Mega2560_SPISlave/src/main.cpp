@@ -72,15 +72,13 @@ void UartComm(void) {
       commState = WAIT_MSG;
       break;
     case WAIT_MSG: {
-      if (size >= 17) {
-        uint8_t length = 255;
-        char buf[length];
-        int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, length);
-        for (int i = 0; i < bytesRead; i++) {
-          Serial.write(buf[i]);
-        }
-        commState = SEND_ACK_MSG;
+      uint8_t length = 255;
+      char buf[length];
+      int bytesRead = PIC32_SERIAL.readBytesUntil('\n', buf, length);
+      for (int i = 0; i < bytesRead; i++) {
+        Serial.write(buf[i]);
       }
+      commState = SEND_ACK_MSG;
       break;
     }
     case SEND_ACK_MSG:
@@ -91,12 +89,12 @@ void UartComm(void) {
 }
 
 void loop() {
-  UartComm();
-  
   if (isDataUpdated) {
     isDataUpdated = 0;
-    LogInfo("incorrect ack received by PIC 0x%02X\n", rec);
+    LogInfo("PIC print state = 0x%02X\n", rec);
   }
+  
+  UartComm();
 }
 
 ISR (SPI_STC_vect) {
