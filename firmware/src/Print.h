@@ -10,7 +10,11 @@
  * Usage: The Print_EnqueueMsg function adds a message to a queue to be
  * transmitted once all other transmissions are complete. Since this module is
  * non-blocking, the Print_Task function must be called repetitively to handle
- * the sending and receiving of messages and acknowledgments.
+ * the sending and receiving of messages and acknowledgments. 
+ * 
+ * Notes:
+ * Maximum message size is limited to PRINT_MAX_STR_LEN.
+ * The receiving unit reads bytes until the string NULL terminator '\0' is read
  *
  * Created on July 13, 2021, 10:00 AM
  */

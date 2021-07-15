@@ -10,12 +10,11 @@
 
 // spi
 #define DUMMY_SPI_DATA 0x7Eu
-#define PRINT_STR_MAX_LEN 255u
-#define PRINT_EXPECTED_ACK 0xACu
 volatile uint8_t rec, send, isDataUpdated;
 
 // uart
 #define PIC32_SERIAL Serial2
+#define PRINT_STR_MAX_LEN 256u
 #define START 0xA5u
 #define ACK 0xF9u
 typedef enum {
@@ -66,9 +65,8 @@ void UartComm(void) {
       commState = WAIT_MSG;
       break;
     case WAIT_MSG: {
-      uint8_t length = 256;
-      char buf[length];
-      int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, length);
+      char buf[PRINT_STR_MAX_LEN];
+      int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, PRINT_STR_MAX_LEN);
       for (int i = 0; i < bytesRead; i++) {
         Serial.write(buf[i]);
       }

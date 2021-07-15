@@ -10,7 +10,11 @@
  * Usage: The Print_EnqueueMsg function adds a message to a queue to be
  * transmitted once all other transmissions are complete. Since this module is
  * non-blocking, the Print_Task function must be called repetitively to handle
- * the sending and receiving of messages and acknowledgments. ARDUINO LOOKING FOR NULL CHARACTER??
+ * the sending and receiving of messages and acknowledgments. 
+ * 
+ * Notes:
+ * Maximum message size is limited to PRINT_MAX_STR_LEN.
+ * The receiving unit reads bytes until the string NULL terminator '\0' is read
  *
  * Created on July 13, 2021, 10:06 AM
  */
@@ -59,6 +63,7 @@ UART_ERROR Errors;
 // **** END MODULE GLOBAL VARIABLES ****
 
 // **** MODULE FUNCTION PROTOTYPES ****
+char* Print_DequeueMsg(uint8_t* size); // returns a pointer to the msg, and stores the size of the message in uint8_t* size
 void UART5_WriteCallback(uintptr_t context);
 void UART5_ReadCallback(uintptr_t context);
 // **** END MODULE FUNCTION PROTOTYPES ****
@@ -106,6 +111,21 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     return returnVal;
 }
 
+char* Print_DequeueMsg(uint8_t* size) {
+    char* msg = NULL;
+    if (!Print_IsQueueEmpty()) {
+        msg = Queue.msgQueue[Queue.index];
+        *size = Queue.msgSize[Queue.index];
+        Queue.index++;
+        if (Queue.index >= PRINT_MAX_MSGS) {
+            // perform the modulo operation when necessary
+            Queue.index = Queue.index % PRINT_MAX_MSGS;
+        }
+        Queue.size--;
+    }
+    return msg;
+}
+
 bool Print_IsQueueEmpty(void) {
     return (Queue.size == 0);
 }
@@ -149,15 +169,7 @@ void Print_Task(void) {
             case VERIFY_ACK_START_SEND_MSG:
                 if (response == PRINT_ACK) {
                     response = 0;
-                    // TODO: create a dequeue function to clean up this case AFTER IT WORKS
-                    nextWrite = (char*) Queue.msgQueue[Queue.index]; // need to cast?
-                    sizeNextWrite = Queue.msgSize[Queue.index];
-                    Queue.index++;
-                    if (Queue.index >= PRINT_MAX_MSGS) {
-                        // perform the modulo operation when necessary
-                        Queue.index = Queue.index % PRINT_MAX_MSGS;
-                    }
-                    Queue.size--;
+                    nextWrite = Print_DequeueMsg(&sizeNextWrite);
                     UART5_Write(nextWrite, sizeNextWrite);
                     Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
                     printState = VERIFY_ACK_MSG;
@@ -181,6 +193,13 @@ void Print_Task(void) {
         Uart5.isTxFinished = false;
         UART5_Read(&response, 1);
     }
+    
+    /**
+     * can try
+     * if nextWrite != NULL
+     *      write
+     *      isRxFinished = false
+     */
 }
 
 /**

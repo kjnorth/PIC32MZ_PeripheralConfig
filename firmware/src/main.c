@@ -47,15 +47,12 @@ int main(int argc, char** argv) {
 #else
 #endif
 
-    Print_EnqueueMsg("test\n");
     Print_EnqueueMsg("Hola Arduino from the new print module\n");
     Print_EnqueueMsg("I am trying my best\n");
     Print_EnqueueMsg("29 is all that I have\n");
     Print_EnqueueMsg("This is round %u\n", 4u);
-    Print_EnqueueMsg("What if there is a %u involved?\n", 0u);
+    Print_EnqueueMsg("What if there is a %0.3f involved?\n", 7.123);
     Print_EnqueueMsg("this should NOT get sent\n");
-
-
 
     while (1) {
         unsigned long ct = msTicks;
