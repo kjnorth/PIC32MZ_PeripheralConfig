@@ -66,7 +66,7 @@ void UartComm(void) {
       commState = WAIT_MSG;
       break;
     case WAIT_MSG: {
-      uint8_t length = 255;
+      uint8_t length = 256;
       char buf[length];
       int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, length);
       for (int i = 0; i < bytesRead; i++) {

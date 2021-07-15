@@ -47,13 +47,11 @@ int main(int argc, char** argv) {
 #else
 #endif
 
-    uint8_t four = 4;
-    uint8_t zero = 0;
     Print_EnqueueMsg("Hola Arduino from the new print module\n");
     Print_EnqueueMsg("I am trying my best\n");
     Print_EnqueueMsg("29 is all that I have\n");
-    Print_EnqueueMsg("This is round %u\n", four);
-    Print_EnqueueMsg("What if there is a %u involved?\n", zero);
+    Print_EnqueueMsg("This is round %u\n", 4u);
+    Print_EnqueueMsg("What if there is a %u involved?\n", 0u);
     Print_EnqueueMsg("this should NOT get sent\n");
 
 
