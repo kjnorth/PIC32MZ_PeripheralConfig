@@ -45,17 +45,11 @@ void setup() {
   SPCR = 0xC0; // SPI interrupts enabled, SPI peripheral enabled, MSB transmitted first, slave mode,
                // SCK idle low, sample on rising edge, clk bits [1:0] meaningless in slave mode
   SREG = sreg;
-  LogInfo("commState is %u\n", commState);
 }
 
 void UartComm(void) {
   uint8_t ack = ACK;
   int size = PIC32_SERIAL.available();
-
-  if (commState != preState) {
-    preState = commState;
-    LogInfo("commState is %u\n", commState);
-  }
 
   switch (commState) {
     case WAIT_START: {
@@ -74,7 +68,7 @@ void UartComm(void) {
     case WAIT_MSG: {
       uint8_t length = 255;
       char buf[length];
-      int bytesRead = PIC32_SERIAL.readBytesUntil('\n', buf, length);
+      int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, length);
       for (int i = 0; i < bytesRead; i++) {
         Serial.write(buf[i]);
       }

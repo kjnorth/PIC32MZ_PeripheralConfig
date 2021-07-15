@@ -83,14 +83,12 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     bool returnVal = false;
 
     // allocate 2x space in case fmt passed is too long to avoid errors before length check
-    char message[2 * PRINT_MAX_STR_LEN];
+    char message[2 * PRINT_MAX_STR_LEN] = {0};
     // format message based on the fmt passed along with variadic arguments
     va_list args;
     va_start(args, fmt);
     vsprintf(message, fmt, args);
-    uint16_t sizeMessage = strlen(message); // do I want +1 to send \0 char? what happens if msg contains a 0 in the middle
-    // when receiver is looking for \0 as a terminator?
-    // I DO WANT TO SEND A NULL TERMINATOR
+    uint16_t sizeMessage = strlen(message) + 1; // +1 to include NULL terminator
     va_end(args);
 
     if ((sizeMessage <= PRINT_MAX_STR_LEN) && !Print_IsQueueFull()) {
@@ -125,16 +123,10 @@ bool Print_IsQueueFull(void) {
 void Print_Task(void) {
     static uint8_t response = 0;
 
-//    static print_state_t preState = 0;
-//    if (printState != preState) {
-//        preState = printState;
-//        SPIComm((uint8_t) printState);
-//    }
-
     if (Uart5.isRxErrorDetected) {
         Uart5.isRxErrorDetected = false;
         // do something to indicate that an error occurred
-        //        LED1_Set();
+        LED1_Set();
     } else if (Uart5.isRxFinished) {
         /* send start byte or msg or toggle LED if ack not received correctly */
         //        Uart5.isRxFinished = false; // do I like the current configuration?
@@ -146,20 +138,15 @@ void Print_Task(void) {
         switch (printState) {
             case SEND_START:
                 if (!Print_IsQueueEmpty()) {
-                    LED1_Set();
                     // queue is non-empty, initiate the send of a message
                     nextWrite = (char*) &startByte;
                     sizeNextWrite = 1;
                     UART5_Write(nextWrite, sizeNextWrite);
                     Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
                     printState = VERIFY_ACK_START_SEND_MSG;
-                } else {
-                    LED1_Clear();
                 }
                 break;
             case VERIFY_ACK_START_SEND_MSG:
-                //                LED1_Clear();
-
                 if (response == PRINT_ACK) {
                     response = 0;
                     // TODO: create a dequeue function to clean up this case AFTER IT WORKS
@@ -176,18 +163,16 @@ void Print_Task(void) {
                     printState = VERIFY_ACK_MSG;
                 } else {
                     // error occurred
-                    //                    LED1_Set();
+                    LED1_Set();
                 }
                 break;
             case VERIFY_ACK_MSG:
-                LED1_Clear();
-
                 if (response == PRINT_ACK) {
                     response = 0;
                     printState = SEND_START;
                 } else {
                     // error occurred
-                    //                    LED1_Set();
+                    LED1_Set();
                 }
                 break;
         }
