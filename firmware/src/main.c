@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
 #else
 #endif
 
+    Print_EnqueueMsg("test\n");
     Print_EnqueueMsg("Hola Arduino from the new print module\n");
     Print_EnqueueMsg("I am trying my best\n");
     Print_EnqueueMsg("29 is all that I have\n");
