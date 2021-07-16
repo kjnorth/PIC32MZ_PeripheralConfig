@@ -172,43 +172,7 @@ void Print_Task(void) {
                 }
                 break;
             case VERIFY_ACK_START_SEND_MSG:
-                if (response == PRINT_ACK) {
-                    
-                    char val = 'A'; // Allocate memory on the stack for a character with the value of A.
-                    char* ptr; // Allocate memory on the stack for a pointer to a char.
-                    ptr = &val; // Assign the pointer to point to the memory address where A resides.
-                    *ptr = 'B'; // Change the value at the memory address where A resides (val) to B.
-                    char** pptr; // Allocate memory on the stack for a pointer to a char pointer (char*).
-                    pptr = &ptr; // Assign the pointer to point to the memory address where the pointer to val resides.
-                                // In other words, the value stored in pptr is an address of a char*.
-                    *pptr = ptr; // Dereferencing pptr one time results in the address of a char. This can be set to the
-                                // address of any char. In this case, we want to set it to the address of val which is equivalent to ptr.
-                                // This does the same thing as the line above with different syntax.
-                    *pptr = &val; // This line is exactly equivalent to the line above because ptr = &val.
-                    **pptr = 'C'; // Double dereferencing pptr results in .....Change the value at the memory address where B resides (val) to C.
-                    // Now, val = C.
-                    
-                    // How to do it from within a function so that the address of a char is returned via the argument, pptr
-                    // void foo(char** pptr); // prototype
-                    // foo(&ptr); // function call
-                    // foo(pptr); // can do it this way too
-                    
-                    /**
-                     * void foo(char** pptr) {
-                     *      // Dereference pptr to tell it to point to the address of the first character of the message.
-                     *      *pptr = Queue.msgQueue[Queue.index];
-                     * 
-                     *      // Or can do the following two lines, but this is ill advised because tempPtr must be made STATIC.
-                     *      // Otherwise, upon exit of the scope of foo, the address where tempPtr resides, &tempPtr, is free
-                     *      // to be used for other operations which would then result in losing the value that we want to keep;
-                     *      // the address of the first character of the message.
-                     *      static char* tempPtr = Queue.msgQueue[Queue.index];
-                     *      pptr = &tempPtr;
-                     * 
-                     *      **pptr = 'D'; // Change the value of the first character of the message to D.
-                     * }
-                     */
-                    
+                if (response == PRINT_ACK) {                    
                     response = 0;
                     nextWrite = Print_DequeueMsg(&sizeNextWrite);
                     UART5_Write(nextWrite, sizeNextWrite);
