@@ -1,1 +1,39 @@
-* -crlf
+# Auto detect text files and perform LF normalization
+*        text=auto
+
+# Sources
+*.c     text eol=crlf diff=c
+*.cc    text eol=crlf diff=cpp
+*.cxx   text eol=crlf diff=cpp
+*.cpp   text eol=crlf diff=cpp
+*.c++   text eol=crlf diff=cpp
+*.hpp   text eol=crlf diff=cpp
+*.h     text eol=crlf diff=c
+*.h++   text eol=crlf diff=cpp
+*.hh    text eol=crlf diff=cpp
+*.cs     text eol=crlf diff=csharp
+*.java   text eol=crlf diff=java
+*.html   text eol=crlf diff=html
+*.css    text eol=crlf
+*.js     text eol=crlf
+*.sql    text eol=crlf
+
+*.csproj text eol=crlf merge=union
+*.sln    text merge=union eol=crlf
+
+*.docx   diff=astextplain
+*.DOCX   diff=astextplain
+
+# absolute paths are ok, as are globs
+/**/postinst* text eol=crlf
+
+# paths that don't start with / are treated relative to the .gitattributes folder
+relative/path/*.txt text eol=crlf
+
+# Serialisation
+*.json     text eol=crlf
+*.toml     text eol=crlf
+*.xml      text eol=crlf
+*.yaml     text eol=crlf
+*.yml      text eol=crlf
+*.properties      text eol=crlf
