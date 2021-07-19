@@ -63,7 +63,7 @@ UART_ERROR Errors;
 // **** END MODULE GLOBAL VARIABLES ****
 
 // **** MODULE FUNCTION PROTOTYPES ****
-char* Print_DequeueMsg(uint8_t* size); // returns a pointer to the msg, and stores the size of the message in uint8_t* size
+bool Print_DequeueMsg(char** msg, uint8_t* size); // returns a pointer to the msg, and stores the size of the message in uint8_t* size
 void UART5_WriteCallback(uintptr_t context);
 void UART5_ReadCallback(uintptr_t context);
 // **** END MODULE FUNCTION PROTOTYPES ****
@@ -116,10 +116,10 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
 
 //my_struct_t temp = Print_DequeueMsg
 
-char* Print_DequeueMsg(uint8_t* size) {
-    char* msg = NULL;
+bool Print_DequeueMsg(char** msg, uint8_t* size) {
+    bool returnVal = false;
     if (!Print_IsQueueEmpty()) {
-        msg = Queue.msgQueue[Queue.index];
+        *msg = Queue.msgQueue[Queue.index];
         *size = Queue.msgSize[Queue.index];
         Queue.index++;
         if (Queue.index >= PRINT_MAX_MSGS) {
@@ -127,8 +127,9 @@ char* Print_DequeueMsg(uint8_t* size) {
             Queue.index = Queue.index % PRINT_MAX_MSGS;
         }
         Queue.size--;
+        returnVal = true;
     }
-    return msg;
+    return returnVal;
 }
 
 bool Print_IsQueueEmpty(void) {
@@ -174,10 +175,11 @@ void Print_Task(void) {
             case VERIFY_ACK_START_SEND_MSG:
                 if (response == PRINT_ACK) {                    
                     response = 0;
-                    nextWrite = Print_DequeueMsg(&sizeNextWrite);
-                    UART5_Write(nextWrite, sizeNextWrite);
-                    Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
-                    printState = VERIFY_ACK_MSG;
+                    if (Print_DequeueMsg(&nextWrite, &sizeNextWrite)) {
+                        UART5_Write(nextWrite, sizeNextWrite);
+                        Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
+                        printState = VERIFY_ACK_MSG;
+                    }
                 } else {
                     // error occurred
                     LED1_Set();
