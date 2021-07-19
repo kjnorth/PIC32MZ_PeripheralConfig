@@ -24,13 +24,17 @@
 #include <string.h>
 
 #include "Print.h"
-#include "definitions.h" // does it make sense to include all of these??
+#include "Time.h"
+
+#include "peripheral/gpio/plib_gpio.h"
+#include "peripheral/uart/plib_uart5.h"
 
 // **** MODULE DEFINES ****
 #define PRINT_MAX_MSGS 5u
 #define PRINT_MAX_STR_LEN 256u
 #define PRINT_START 0xA5u
 #define PRINT_ACK 0xF9u
+#define PRINT_READ_TIMEOUT_MS 10u
 // **** END MODULE DEFINES ****
 
 // **** MODULE STRUCTS ****
@@ -41,21 +45,21 @@ typedef struct {
     uint8_t index; // current index in the msgQueue
     uint8_t size; // number of messages enqueued
 } print_queue_t;
-print_queue_t Queue;
+static print_queue_t Queue;
 
 typedef enum {
     SEND_START,
     VERIFY_ACK_START_SEND_MSG,
     VERIFY_ACK_MSG,
 } print_state_t;
-print_state_t printState;
+static print_state_t printState;
 
 typedef struct {
     volatile bool isRxErrorDetected;
     volatile bool isTxFinished;
     volatile bool isRxFinished;
 } uart_flags_t;
-uart_flags_t Uart5;
+static uart_flags_t Uart5;
 // **** END MODULE STRUCTS ****
 
 // **** MODULE GLOBAL VARIABLES ****
@@ -63,15 +67,10 @@ UART_ERROR Errors;
 // **** END MODULE GLOBAL VARIABLES ****
 
 // **** MODULE FUNCTION PROTOTYPES ****
-bool Print_DequeueMsg(char** msg, uint8_t* size); // returns a pointer to the msg, and stores the size of the message in uint8_t* size
-void UART5_WriteCallback(uintptr_t context);
-void UART5_ReadCallback(uintptr_t context);
+static bool Print_DequeueMsg(char** msg, uint8_t* size); // returns a pointer to the msg, and stores the size of the message in uint8_t* size
+static void UART5_WriteCallback(uintptr_t context);
+static void UART5_ReadCallback(uintptr_t context);
 // **** END MODULE FUNCTION PROTOTYPES ****
-
-void SPIComm(uint8_t sendData) {
-    uint8_t recData = 0;
-    SPI4_WriteRead(&sendData, 1, &recData, 1);
-}
 
 void Print_Init(void) {
     Queue.index = 0;
@@ -82,6 +81,7 @@ void Print_Init(void) {
     Uart5.isRxFinished = true; // init to true so Print_Task kicks off the first message that is enqueued
     UART5_WriteCallbackRegister(UART5_WriteCallback, 0);
     UART5_ReadCallbackRegister(UART5_ReadCallback, 0);
+    Time_Init();
 }
 
 bool Print_EnqueueMsg(const char* fmt, ...) {
@@ -94,7 +94,6 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     va_start(args, fmt);
     vsprintf(message, fmt, args);
     uint16_t sizeMessage = strlen(message) + 1; // +1 to include NULL terminator
-    // QUESTION: what if message is the maximum length? the +1 up here ^ could not be NULL...
     va_end(args);
 
     if ((sizeMessage <= PRINT_MAX_STR_LEN) && !Print_IsQueueFull()) {
@@ -111,12 +110,8 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     }
     return returnVal;
 }
-// what I want:
-// bool Print_DequeuMsg(char **msg, uint8_t* size);
 
-//my_struct_t temp = Print_DequeueMsg
-
-bool Print_DequeueMsg(char** msg, uint8_t* size) {
+static bool Print_DequeueMsg(char** msg, uint8_t* size) {
     bool returnVal = false;
     if (!Print_IsQueueEmpty()) {
         *msg = Queue.msgQueue[Queue.index];
@@ -148,6 +143,7 @@ bool Print_IsQueueFull(void) {
  */
 void Print_Task(void) {
     static uint8_t response = 0;
+    static uint32_t readStartTime = 0;
 
     if (Uart5.isRxErrorDetected) {
         Uart5.isRxErrorDetected = false;
@@ -155,8 +151,6 @@ void Print_Task(void) {
         LED1_Set();
     } else if (Uart5.isRxFinished) {
         /* send start byte or msg or toggle LED if ack not received correctly */
-        //        Uart5.isRxFinished = false; // do I like the current configuration?
-
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
         const static uint8_t startByte = PRINT_START; // static so memory is not erased before UART can write it
@@ -167,8 +161,6 @@ void Print_Task(void) {
                     // queue is non-empty, initiate the send of a message
                     nextWrite = (char*) &startByte;
                     sizeNextWrite = 1;
-                    UART5_Write(nextWrite, sizeNextWrite);
-                    Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
                     printState = VERIFY_ACK_START_SEND_MSG;
                 }
                 break;
@@ -176,8 +168,6 @@ void Print_Task(void) {
                 if (response == PRINT_ACK) {                    
                     response = 0;
                     if (Print_DequeueMsg(&nextWrite, &sizeNextWrite)) {
-                        UART5_Write(nextWrite, sizeNextWrite);
-                        Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
                         printState = VERIFY_ACK_MSG;
                     }
                 } else {
@@ -195,31 +185,38 @@ void Print_Task(void) {
                 }
                 break;
         }
+        
+        if (nextWrite != NULL) {
+            UART5_Write(nextWrite, sizeNextWrite);
+            Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
+        }
     } else if (Uart5.isTxFinished) {
         /* initiate read of ack */
         Uart5.isTxFinished = false;
         UART5_Read(&response, 1);
+        readStartTime = Time_GetMs();
+    } else if (UART5_ReadIsBusy()) {
+        uint32_t curTime = Time_GetMs();
+        if (curTime - readStartTime > PRINT_READ_TIMEOUT_MS) {
+            // receiving unit is not responding, abort the read and start over, note that the most recent dequeued message may be lost
+            UART5_ReadAbort();
+            printState = SEND_START;
+            Uart5.isRxFinished = true; // set to true to send start byte again
+        }
     }
-    
-    /**
-     * can try
-     * if nextWrite != NULL
-     *      write
-     *      isRxFinished = false
-     */
 }
 
 /**
  * function called when UART5 finishes transmitting data
  */
-void UART5_WriteCallback(uintptr_t context) {
+static void UART5_WriteCallback(uintptr_t context) {
     Uart5.isTxFinished = true;
 }
 
 /**
  * function called when UART5 finishes reading data
  */
-void UART5_ReadCallback(uintptr_t context) {
+static void UART5_ReadCallback(uintptr_t context) {
     Errors = UART5_ErrorGet();
     if (Errors != UART_ERROR_NONE) {
         /* ErrorGet clears errors, set error flag to notify console */

@@ -17,6 +17,7 @@ volatile uint8_t rec, send, isDataUpdated;
 #define PRINT_STR_MAX_LEN 256u
 #define START 0xA5u
 #define ACK 0xF9u
+#define PRINT_READ_TIMEOUT_MS 10u
 typedef enum {
   WAIT_START,
   SEND_ACK_START,
@@ -49,6 +50,7 @@ void setup() {
 void UartComm(void) {
   uint8_t ack = ACK;
   int size = PIC32_SERIAL.available();
+  static uint32_t waitMsgStartTime = 0;
 
   switch (commState) {
     case WAIT_START: {
@@ -62,17 +64,26 @@ void UartComm(void) {
     }
     case SEND_ACK_START:
       PIC32_SERIAL.write(&ack, 1);
+      waitMsgStartTime = millis();
       commState = WAIT_MSG;
       break;
-    case WAIT_MSG: {
-      char buf[PRINT_STR_MAX_LEN];
-      int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, PRINT_STR_MAX_LEN);
-      for (int i = 0; i < bytesRead; i++) {
-        Serial.write(buf[i]);
+    case WAIT_MSG:
+      if (PIC32_SERIAL.available()) {
+        char buf[PRINT_STR_MAX_LEN];
+        int bytesRead = PIC32_SERIAL.readBytesUntil('\0', buf, PRINT_STR_MAX_LEN);
+        for (int i = 0; i < bytesRead; i++) {
+          Serial.write(buf[i]);
+        }
+        commState = SEND_ACK_MSG;
       }
-      commState = SEND_ACK_MSG;
+      else {
+        uint32_t curtime = millis();
+        if (curtime - waitMsgStartTime > PRINT_READ_TIMEOUT_MS) {
+          // sending unit is not sending a message, abort
+          commState = WAIT_START;
+        }
+      }
       break;
-    }
     case SEND_ACK_MSG:
       PIC32_SERIAL.write(&ack, 1);
       commState = WAIT_START;

@@ -47,6 +47,7 @@
         </logicalFolder>
       </logicalFolder>
       <itemPath>../src/Print.h</itemPath>
+      <itemPath>../src/Time.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -102,6 +103,7 @@
       </logicalFolder>
       <itemPath>../src/main.c</itemPath>
       <itemPath>../src/Print.c</itemPath>
+      <itemPath>../src/Time.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
