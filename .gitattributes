@@ -35,5 +35,5 @@ relative/path/*.txt text eol=crlf
 *.toml     text eol=crlf
 *.xml      text eol=crlf
 *.yaml     text eol=crlf
-*.yml      text eol=crlf
+*.yml      text eol=lf
 *.properties      text eol=crlf
