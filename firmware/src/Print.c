@@ -135,12 +135,6 @@ bool Print_IsQueueFull(void) {
     return (Queue.size >= PRINT_MAX_MSGS);
 }
 
-/**
- * NOTE:
- * this looks like it is setup quite well. However, if the reception of an ACK fails,
- * the function will get stuck in a limbo state. Should fix. Should implement a timeout feature
- * Perhaps only set isRxFinished to false once data is sent to avoid getting hung up
- */
 void Print_Task(void) {
     static uint8_t response = 0;
     static uint32_t readStartTime = 0;
@@ -150,7 +144,7 @@ void Print_Task(void) {
         // do something to indicate that an error occurred
         LED1_Set();
     } else if (Uart5.isRxFinished) {
-        /* send start byte or msg or toggle LED if ack not received correctly */
+        /* send start byte or msg or illuminate LED if ack not received correctly */
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
         const static uint8_t startByte = PRINT_START; // static so memory is not erased before UART can write it

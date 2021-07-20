@@ -17,6 +17,12 @@
 
 #define SW_VERSION 0.1f
 
+void EncChangeNoticeConfig(void) {
+    CNCONJbits.ON = 1;
+    CNCONJbits.EDGEDETECT = 1;
+    Print_EnqueueMsg("cnconj is %u\n", CNCONJ);
+}
+
 /*
  * 
  */
@@ -26,8 +32,7 @@ int main(int argc, char** argv) {
     LED1_Clear();
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
-    Print_EnqueueMsg("Another test message\n");
-    Print_EnqueueMsg("thinking\n");
+    EncChangeNoticeConfig();
 
     while (1) {
         unsigned long ct = Time_GetMs();

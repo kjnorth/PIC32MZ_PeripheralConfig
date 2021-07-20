@@ -18,7 +18,6 @@
 #include "peripheral/coretimer/plib_coretimer.h"
 
 // **** MODULE GLOBAL VARIABLES ****
-static bool IsInitialized = false;
 static volatile uint32_t MsTicks;
 // **** END MODULE GLOBAL VARIABLES ****
 
@@ -27,6 +26,7 @@ static void CORETIMER_InterruptCallback(uint32_t status, uintptr_t context);
 // **** END MODULE FUNCTION PROTOTYPES ****
 
 void Time_Init(void) {
+    static bool IsInitialized = false;
     if (!IsInitialized) {
         IsInitialized = true;
         MsTicks = 0;

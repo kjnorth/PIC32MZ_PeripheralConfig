@@ -193,6 +193,24 @@
 #define ENC1_0_Get()               ((PORTB >> 4) & 0x1)
 #define ENC1_0_PIN                  GPIO_PIN_RB4
 
+/*** Macros for ENC_A_TEST pin ***/
+#define ENC_A_TEST_Set()               (LATJSET = (1<<13))
+#define ENC_A_TEST_Clear()             (LATJCLR = (1<<13))
+#define ENC_A_TEST_Toggle()            (LATJINV= (1<<13))
+#define ENC_A_TEST_OutputEnable()      (TRISJCLR = (1<<13))
+#define ENC_A_TEST_InputEnable()       (TRISJSET = (1<<13))
+#define ENC_A_TEST_Get()               ((PORTJ >> 13) & 0x1)
+#define ENC_A_TEST_PIN                  GPIO_PIN_RJ13
+
+/*** Macros for ENC_B_TEST pin ***/
+#define ENC_B_TEST_Set()               (LATJSET = (1<<14))
+#define ENC_B_TEST_Clear()             (LATJCLR = (1<<14))
+#define ENC_B_TEST_Toggle()            (LATJINV= (1<<14))
+#define ENC_B_TEST_OutputEnable()      (TRISJCLR = (1<<14))
+#define ENC_B_TEST_InputEnable()       (TRISJSET = (1<<14))
+#define ENC_B_TEST_Get()               ((PORTJ >> 14) & 0x1)
+#define ENC_B_TEST_PIN                  GPIO_PIN_RJ14
+
 /*** Macros for ENC2_A pin ***/
 #define ENC2_A_Set()               (LATBSET = (1<<3))
 #define ENC2_A_Clear()             (LATBCLR = (1<<3))

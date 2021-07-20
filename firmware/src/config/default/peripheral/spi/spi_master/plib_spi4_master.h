@@ -65,6 +65,9 @@ bool SPI4_Read(void* pReceiveData, size_t rxSize);
 
 bool SPI4_TransferSetup (SPI_TRANSFER_SETUP *setup, uint32_t spiSourceClock);
 
+bool SPI4_IsBusy(void);
+
+void SPI4_CallbackRegister(SPI_CALLBACK callback, uintptr_t context);
 
 /* Provide C++ Compatibility */
 #ifdef __cplusplus
