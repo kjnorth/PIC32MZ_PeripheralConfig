@@ -35,6 +35,10 @@
                 <itemPath>../src/config/default/peripheral/spi/spi_master/plib_spi4_master.h</itemPath>
               </logicalFolder>
             </logicalFolder>
+            <logicalFolder name="f9" displayName="tmr" projectFiles="true">
+              <itemPath>../src/config/default/peripheral/tmr/plib_tmr_common.h</itemPath>
+              <itemPath>../src/config/default/peripheral/tmr/plib_tmr3.h</itemPath>
+            </logicalFolder>
             <logicalFolder name="f3" displayName="uart" projectFiles="true">
               <itemPath>../src/config/default/peripheral/uart/plib_uart_common.h</itemPath>
               <itemPath>../src/config/default/peripheral/uart/plib_uart5.h</itemPath>
@@ -89,6 +93,9 @@
                 <itemPath>../src/config/default/peripheral/spi/spi_master/plib_spi4_master.c</itemPath>
               </logicalFolder>
             </logicalFolder>
+            <logicalFolder name="f9" displayName="tmr" projectFiles="true">
+              <itemPath>../src/config/default/peripheral/tmr/plib_tmr3.c</itemPath>
+            </logicalFolder>
             <logicalFolder name="f3" displayName="uart" projectFiles="true">
               <itemPath>../src/config/default/peripheral/uart/plib_uart5.c</itemPath>
             </logicalFolder>
@@ -118,6 +125,7 @@
         <itemPath>../src/config/default/default.mhc/project.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/settings.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/spi4.yml</itemPath>
+        <itemPath>../src/config/default/default.mhc/tmr3.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/uart5.yml</itemPath>
       </logicalFolder>
       <itemPath>Makefile</itemPath>
@@ -380,7 +388,6 @@
         <property key="UART5" value="true"/>
         <property key="UART6" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>

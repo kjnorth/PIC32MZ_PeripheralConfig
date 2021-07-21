@@ -193,15 +193,6 @@
 #define ENC1_0_Get()               ((PORTB >> 4) & 0x1)
 #define ENC1_0_PIN                  GPIO_PIN_RB4
 
-/*** Macros for ENC2_A pin ***/
-#define ENC2_A_Set()               (LATBSET = (1<<3))
-#define ENC2_A_Clear()             (LATBCLR = (1<<3))
-#define ENC2_A_Toggle()            (LATBINV= (1<<3))
-#define ENC2_A_OutputEnable()      (TRISBCLR = (1<<3))
-#define ENC2_A_InputEnable()       (TRISBSET = (1<<3))
-#define ENC2_A_Get()               ((PORTB >> 3) & 0x1)
-#define ENC2_A_PIN                  GPIO_PIN_RB3
-
 /*** Macros for ENC2_B pin ***/
 #define ENC2_B_Set()               (LATBSET = (1<<2))
 #define ENC2_B_Clear()             (LATBCLR = (1<<2))
