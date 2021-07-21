@@ -44,6 +44,11 @@
 #include "plib_gpio.h"
 
 
+/* Array to store callback objects of each configured interrupt */
+GPIO_PIN_CALLBACK_OBJ portPinCbObj[2];
+
+/* Array to store number of interrupts in each PORT Channel + previous interrupt count */
+uint8_t portNumCb[10 + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, };
 
 /******************************************************************************
   Function:
@@ -84,6 +89,10 @@ void GPIO_Initialize ( void )
 
     /* PORTJ Initialization */
     ANSELJCLR = 0x300; /* Digital Mode Enable */
+    /* Change Notice Enable */
+    CNCONJSET = _CNCONJ_ON_MASK;
+    PORTJ;
+    IEC3SET = _IEC3_CNJIE_MASK;
 
     /* PORTK Initialization */
 
@@ -120,6 +129,16 @@ void GPIO_Initialize ( void )
     CFGCONbits.IOLOCK = 1;
     SYSKEY = 0x00000000;
 
+    uint32_t i;
+    /* Initialize Interrupt Pin data structures */
+    portPinCbObj[0 + 0].pin = GPIO_PIN_RJ13;
+    
+    portPinCbObj[0 + 1].pin = GPIO_PIN_RJ14;
+    
+    for(i=0; i<2; i++)
+    {
+        portPinCbObj[i].callback = NULL;
+    }
 }
 
 // *****************************************************************************
@@ -260,7 +279,116 @@ void GPIO_PortOutputEnable(GPIO_PORT port, uint32_t mask)
     *(volatile uint32_t *)(&TRISACLR + (port * 0x40)) = mask;
 }
 
+// *****************************************************************************
+/* Function:
+    void GPIO_PortInterruptEnable(GPIO_PORT port, uint32_t mask)
 
+  Summary:
+    Enables IO interrupt on selected IO pins of a port.
+
+  Remarks:
+    See plib_gpio.h for more details.
+*/
+void GPIO_PortInterruptEnable(GPIO_PORT port, uint32_t mask)
+{
+    *(volatile uint32_t *)(&CNENASET + (port * 0x40)) = mask;
+}
+
+// *****************************************************************************
+/* Function:
+    void GPIO_PortInterruptDisable(GPIO_PORT port, uint32_t mask)
+
+  Summary:
+    Disables IO interrupt on selected IO pins of a port.
+
+  Remarks:
+    See plib_gpio.h for more details.
+*/
+void GPIO_PortInterruptDisable(GPIO_PORT port, uint32_t mask)
+{
+    *(volatile uint32_t *)(&CNENACLR + (port * 0x40)) = mask;
+}
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: GPIO APIs which operates on one pin at a time
+// *****************************************************************************
+// *****************************************************************************
+
+// *****************************************************************************
+/* Function:
+    bool GPIO_PinInterruptCallbackRegister(
+        GPIO_PIN pin,
+        const GPIO_PIN_CALLBACK callback,
+        uintptr_t context
+    );
+
+  Summary:
+    Allows application to register callback for configured pin.
+
+  Remarks:
+    See plib_gpio.h for more details.
+*/
+bool GPIO_PinInterruptCallbackRegister(
+    GPIO_PIN pin,
+    const GPIO_PIN_CALLBACK callback,
+    uintptr_t context
+)
+{
+    uint8_t i;
+    uint8_t portIndex;
+
+    portIndex = pin >> 4;
+
+    for(i = portNumCb[portIndex]; i < portNumCb[portIndex +1]; i++)
+    {
+        if (portPinCbObj[i].pin == pin)
+        {
+            portPinCbObj[i].callback = callback;
+            portPinCbObj[i].context  = context;
+            return true;
+        }
+    }
+    return false;
+}
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: Local Function Implementation
+// *****************************************************************************
+// *****************************************************************************
+
+
+// *****************************************************************************
+/* Function:
+    void CHANGE_NOTICE_J_InterruptHandler(void)
+
+  Summary:
+    Interrupt Handler for change notice interrupt for channel J.
+
+  Remarks:
+	It is an internal function called from ISR, user should not call it directly.
+*/
+void CHANGE_NOTICE_J_InterruptHandler(void)
+{
+    uint8_t i;
+    uint32_t status;
+
+    status  = CNSTATJ;
+    status &= CNENJ;
+
+    PORTJ;
+    IFS3CLR = _IFS3_CNJIF_MASK;
+
+    /* Check pending events and call callback if registered */
+    for(i = 0; i < 2; i++)
+    {
+        if((status & (1 << (portPinCbObj[i].pin & 0xF))) && (portPinCbObj[i].callback != NULL))
+        {
+            portPinCbObj[i].callback (portPinCbObj[i].pin, portPinCbObj[i].context);
+        }
+    }
+}
 
 
 /*******************************************************************************

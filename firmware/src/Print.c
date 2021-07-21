@@ -111,7 +111,7 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     return returnVal;
 }
 
-static bool Print_DequeueMsg(char** msg, uint8_t* size) {
+bool Print_DequeueMsg(char** msg, uint8_t* size) {
     bool returnVal = false;
     if (!Print_IsQueueEmpty()) {
         *msg = Queue.msgQueue[Queue.index];
@@ -203,14 +203,14 @@ void Print_Task(void) {
 /**
  * function called when UART5 finishes transmitting data
  */
-static void UART5_WriteCallback(uintptr_t context) {
+void UART5_WriteCallback(uintptr_t context) {
     Uart5.isTxFinished = true;
 }
 
 /**
  * function called when UART5 finishes reading data
  */
-static void UART5_ReadCallback(uintptr_t context) {
+void UART5_ReadCallback(uintptr_t context) {
     Errors = UART5_ErrorGet();
     if (Errors != UART_ERROR_NONE) {
         /* ErrorGet clears errors, set error flag to notify console */

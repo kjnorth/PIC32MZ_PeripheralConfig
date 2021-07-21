@@ -11,34 +11,31 @@
 #include <stdarg.h>
 #include <string.h>
 
-#include "definitions.h"
+#include "Encoders.h"
 #include "Print.h"
 #include "Time.h"
 
-#define SW_VERSION 0.1f
+#include "definitions.h"
 
-void EncChangeNoticeConfig(void) {
-    CNCONJbits.ON = 1;
-    CNCONJbits.EDGEDETECT = 1;
-    Print_EnqueueMsg("cnconj is %u\n", CNCONJ);
-}
+#define SW_VERSION 0.1f
 
 /*
  * 
  */
 int main(int argc, char** argv) {
     SYS_Initialize(NULL);
+    Encoders_Init();
     Print_Init();
     LED1_Clear();
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
-    EncChangeNoticeConfig();
 
     while (1) {
         unsigned long ct = Time_GetMs();
         static unsigned long pt = 0;
-        if (ct - pt >= 100) {
+        if (ct - pt >= 500) {
             pt = ct;
+            Print_EnqueueMsg("enc1 count is %ld\n", Encoders_GetCount(ENC1));
         }
         Print_Task();
     }
