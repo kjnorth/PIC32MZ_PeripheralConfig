@@ -18,6 +18,34 @@ children:
       children:
       - type: Dynamic
         attributes: {id: core, value: '100000000'}
+  - type: Boolean
+    attributes: {id: ADC_DATA3_INTERRUPT_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: adchs, value: 'false'}
+  - type: Boolean
+    attributes: {id: ADC_DATA3_INTERRUPT_ENABLE_UPDATE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'true'}
+  - type: String
+    attributes: {id: ADC_DATA3_INTERRUPT_HANDLER}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: adchs, value: ADC_DATA3_Handler}
+  - type: Boolean
+    attributes: {id: ADC_DATA3_INTERRUPT_HANDLER_LOCK}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: adchs, value: 'false'}
   - type: String
     attributes: {id: BSP_PIN_100_MODE}
     children:
@@ -997,21 +1025,21 @@ children:
     - type: Values
       children:
       - type: User
-        attributes: {value: ENC2_A}
+        attributes: {value: ''}
   - type: String
     attributes: {id: BSP_PIN_31_FUNCTION_TYPE}
     children:
     - type: Values
       children:
       - type: User
-        attributes: {value: GPIO}
+        attributes: {value: AN3}
   - type: String
     attributes: {id: BSP_PIN_31_MODE}
     children:
     - type: Values
       children:
       - type: User
-        attributes: {value: DIGITAL}
+        attributes: {value: ''}
   - type: String
     attributes: {id: BSP_PIN_34_FUNCTION_NAME}
     children:
@@ -2347,6 +2375,27 @@ children:
       - type: Dynamic
         attributes: {id: core, value: '0'}
   - type: Boolean
+    attributes: {id: EVIC_14_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: Boolean
+    attributes: {id: EVIC_14_HANDLER_LOCK}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: String
+    attributes: {id: EVIC_14_INTERRUPT_HANDLER}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: TIMER_3_Handler}
+  - type: Boolean
     attributes: {id: EVIC_151_ENABLE}
     children:
     - type: Values
@@ -2366,7 +2415,7 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: CAN1_Handler}
+        attributes: {id: core, value: TIMER_3_Handler}
   - type: Boolean
     attributes: {id: EVIC_163_ENABLE}
     children:
@@ -2619,6 +2668,27 @@ children:
       children:
       - type: Dynamic
         attributes: {id: core, value: 'false'}
+  - type: Boolean
+    attributes: {id: EVIC_62_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: Boolean
+    attributes: {id: EVIC_62_HANDLER_LOCK}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: String
+    attributes: {id: EVIC_62_INTERRUPT_HANDLER}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: ADC_DATA3_Handler}
   - type: Combo
     attributes: {id: EVIC_PRIORITY_1ATTRIBUTE}
     children:
@@ -2954,7 +3024,7 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: '511'}
+        attributes: {id: core, value: '507'}
   - type: Hex
     attributes: {id: PMD5_REG_VALUE}
     children:
@@ -3199,7 +3269,7 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: '61951'}
+        attributes: {id: core, value: '61943'}
   - type: Hex
     attributes: {id: SYS_PORT_C_ANSEL}
     children:
@@ -3753,6 +3823,34 @@ children:
       - type: Dynamic
         attributes: {id: core, value: 'true'}
   - type: Boolean
+    attributes: {id: TIMER_3_INTERRUPT_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr3, value: 'false'}
+  - type: Boolean
+    attributes: {id: TIMER_3_INTERRUPT_ENABLE_UPDATE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'true'}
+  - type: String
+    attributes: {id: TIMER_3_INTERRUPT_HANDLER}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr3, value: TIMER_3_Handler}
+  - type: Boolean
+    attributes: {id: TIMER_3_INTERRUPT_HANDLER_LOCK}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr3, value: 'false'}
+  - type: Boolean
     attributes: {id: TMR1_CLOCK_ENABLE}
     children:
     - type: Values
@@ -3773,13 +3871,20 @@ children:
       children:
       - type: Dynamic
         attributes: {id: core, value: '0'}
+  - type: Boolean
+    attributes: {id: TMR3_CLOCK_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr3, value: 'true'}
   - type: Integer
     attributes: {id: TMR3_CLOCK_FREQUENCY}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: '0'}
+        attributes: {id: core, value: '100000000'}
   - type: Integer
     attributes: {id: TMR4_CLOCK_FREQUENCY}
     children:

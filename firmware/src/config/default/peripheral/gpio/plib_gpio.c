@@ -66,7 +66,7 @@ void GPIO_Initialize ( void )
     ANSELACLR = 0x623; /* Digital Mode Enable */
 
     /* PORTB Initialization */
-    ANSELBCLR = 0xf1ff; /* Digital Mode Enable */
+    ANSELBCLR = 0xf1f7; /* Digital Mode Enable */
 
     /* PORTC Initialization */
     ANSELCCLR = 0x1e; /* Digital Mode Enable */
