@@ -17,89 +17,126 @@
  * Created on July 21, 2021, 1:30 PM
  */
 
+// **** MODULE INCLUDE DIRECTIVES ****
 #include "Encoders.h"
 
 #include "peripheral/gpio/plib_gpio.h"
+// **** END MODULE INCLUDE DIRECTIVES ****
+// -----------------------------------------------------------------------------
+// **** MODULE DEFINES ****
 
-// **** MODULE ENUMS ****
+// **** END MODULE DEFINES ****
+// -----------------------------------------------------------------------------
+// **** MODULE TYPEDEFS ****
+typedef uint8_t(*encoder_phase_getter_t)(void);
 
 typedef enum {
     A0B0, A0B1, A1B1, A1B0,
 } encoder_state_t;
-static encoder_state_t curState = A0B0;
-// **** END MODULE ENUMS ****
 
+typedef struct {
+    encoder_phase_getter_t aGet; // is there a better way to do this other than creating a function for ever single encoder phase? would like to use the generated
+                                // macros but I don't think that is possible...
+    encoder_phase_getter_t bGet;
+    encoder_state_t curState;
+    int32_t count;
+} encoder_t;
+// **** END MODULE TYPEDEFS ****
+// -----------------------------------------------------------------------------
 // **** MODULE GLOBAL VARIABLES ****
-static int32_t Enc1Count = 0;
+static encoder_t enc1;
+//static encoder_t enc2;
 // **** END MODULE GLOBAL VARIABLES ****
-
+// -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
-static void Enc1Callback(GPIO_PIN pin, uintptr_t context);
-// **** END MODULE FUNCTION PROTOTYPES ****
+static void EncCallback(GPIO_PIN pin, uintptr_t context);
+static uint8_t Enc1AGet(void);
+static uint8_t Enc1BGet(void);
+// **** MODULE FUNCTION PROTOTYPES ****
+// -----------------------------------------------------------------------------
 
 void Encoders_Init(void) {
-    GPIO_PinInterruptCallbackRegister(ENC_A_TEST_PIN, Enc1Callback, (uintptr_t) NULL);
-    GPIO_PinInterruptCallbackRegister(ENC_B_TEST_PIN, Enc1Callback, (uintptr_t) NULL);
+    enc1.aGet = Enc1AGet;
+    enc1.bGet = Enc1BGet;
+    enc1.curState = A0B0;
+    enc1.count = 0;
+    GPIO_PinInterruptCallbackRegister(ENC_A_TEST_PIN, EncCallback, (uintptr_t) & enc1);
+    GPIO_PinInterruptCallbackRegister(ENC_B_TEST_PIN, EncCallback, (uintptr_t) & enc1);
+    //    GPIO_PinInterruptCallbackRegister(ENC2_A_TEST_PIN, EncCallback, (uintptr_t) &enc2);
+    //    GPIO_PinInterruptCallbackRegister(ENC2_B_TEST_PIN, EncCallback, (uintptr_t) &enc2);
     GPIO_PinInterruptEnable(ENC_A_TEST_PIN);
     GPIO_PinInterruptEnable(ENC_B_TEST_PIN);
 }
 
 int32_t Encoders_GetCount(system_encoder_t enc) {
-    return Enc1Count;
+    return enc1.count; // TODO: update with better implementation
 }
 
 /**
  * E2 encoders - B leads A for clockwise shaft rotation, and A leads B for
  * counterclockwise rotation viewed from the cover/label side of the encoder
  */
-void Enc1Callback(GPIO_PIN pin, uintptr_t context) {
-    uint8_t A = ENC_A_TEST_Get();
-    uint8_t B = ENC_B_TEST_Get();
+void EncCallback(GPIO_PIN pin, uintptr_t context) {
+    encoder_t* enc = (encoder_t*) context;
+    uint8_t A = enc->aGet();
+    uint8_t B = enc->bGet();
 
+    encoder_state_t curState = enc->curState;
+    int32_t count = enc->count;
     switch (curState) {
         case A0B0:
             if ((A == 0) && (B == 1)) {
                 // CW spin
-                Enc1Count++;
+                count++;
                 curState = A0B1;
             } else if ((A == 1) && (B == 0)) {
                 // CCW spin
-                Enc1Count--;
+                count--;
                 curState = A1B0;
             }
             break;
         case A0B1:
             if ((A == 1) && (B == 1)) {
                 // CW spin
-                Enc1Count++;
+                count++;
                 curState = A1B1;
             } else if ((A == 0) && (B == 0)) {
                 // CCW spin
-                Enc1Count--;
+                count--;
                 curState = A0B0;
             }
             break;
         case A1B1:
             if ((A == 1) && (B == 0)) {
                 // CW spin
-                Enc1Count++;
+                count++;
                 curState = A1B0;
             } else if ((A == 0) && (B == 1)) {
                 // CCW spin
-                Enc1Count--;
+                count--;
                 curState = A0B1;
             }
             break;
         case A1B0:
             if ((A == 0) && (B == 0)) {
                 // CW spin
-                Enc1Count++;
+                count++;
                 curState = A0B0;
             } else if ((A == 1) && (B == 1)) {
                 // CCW spin
-                Enc1Count--;
+                count--;
                 curState = A1B1;
             }
             break;
     }
+    enc->curState = curState;
+    enc->count = count;
+}
+
+uint8_t Enc1AGet(void) {
+    return ENC_A_TEST_Get();
+}
+
+uint8_t Enc1BGet(void) {
+    return ENC_B_TEST_Get();
 }

@@ -37,7 +37,7 @@
 #define PRINT_READ_TIMEOUT_MS 10u
 // **** END MODULE DEFINES ****
 
-// **** MODULE STRUCTS ****
+// **** MODULE TYPEDEFS ****
 
 typedef struct {
     char msgQueue[PRINT_MAX_MSGS][PRINT_MAX_STR_LEN];
@@ -60,7 +60,7 @@ typedef struct {
     volatile bool isRxFinished;
 } uart_flags_t;
 static uart_flags_t Uart5;
-// **** END MODULE STRUCTS ****
+// **** END MODULE TYPEDEFS ****
 
 // **** MODULE GLOBAL VARIABLES ****
 UART_ERROR Errors;
