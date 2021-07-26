@@ -45,10 +45,10 @@
 
 
 /* Array to store callback objects of each configured interrupt */
-GPIO_PIN_CALLBACK_OBJ portPinCbObj[2];
+GPIO_PIN_CALLBACK_OBJ portPinCbObj[4];
 
 /* Array to store number of interrupts in each PORT Channel + previous interrupt count */
-uint8_t portNumCb[10 + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, };
+uint8_t portNumCb[10 + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, };
 
 /******************************************************************************
   Function:
@@ -89,12 +89,18 @@ void GPIO_Initialize ( void )
 
     /* PORTJ Initialization */
     ANSELJCLR = 0x300; /* Digital Mode Enable */
+    CNPUJSET = 0x6000; /* Pull-Up Enable */
     /* Change Notice Enable */
     CNCONJSET = _CNCONJ_ON_MASK;
     PORTJ;
     IEC3SET = _IEC3_CNJIE_MASK;
 
     /* PORTK Initialization */
+    CNPUKSET = 0x6; /* Pull-Up Enable */
+    /* Change Notice Enable */
+    CNCONKSET = _CNCONK_ON_MASK;
+    PORTK;
+    IEC3SET = _IEC3_CNKIE_MASK;
 
 
     /* Unlock system for PPS configuration */
@@ -135,7 +141,11 @@ void GPIO_Initialize ( void )
     
     portPinCbObj[0 + 1].pin = GPIO_PIN_RJ14;
     
-    for(i=0; i<2; i++)
+    portPinCbObj[2 + 0].pin = GPIO_PIN_RK1;
+    
+    portPinCbObj[2 + 1].pin = GPIO_PIN_RK2;
+    
+    for(i=0; i<4; i++)
     {
         portPinCbObj[i].callback = NULL;
     }
@@ -382,6 +392,37 @@ void CHANGE_NOTICE_J_InterruptHandler(void)
 
     /* Check pending events and call callback if registered */
     for(i = 0; i < 2; i++)
+    {
+        if((status & (1 << (portPinCbObj[i].pin & 0xF))) && (portPinCbObj[i].callback != NULL))
+        {
+            portPinCbObj[i].callback (portPinCbObj[i].pin, portPinCbObj[i].context);
+        }
+    }
+}
+
+// *****************************************************************************
+/* Function:
+    void CHANGE_NOTICE_K_InterruptHandler(void)
+
+  Summary:
+    Interrupt Handler for change notice interrupt for channel K.
+
+  Remarks:
+	It is an internal function called from ISR, user should not call it directly.
+*/
+void CHANGE_NOTICE_K_InterruptHandler(void)
+{
+    uint8_t i;
+    uint32_t status;
+
+    status  = CNSTATK;
+    status &= CNENK;
+
+    PORTK;
+    IFS3CLR = _IFS3_CNKIF_MASK;
+
+    /* Check pending events and call callback if registered */
+    for(i = 2; i < 4; i++)
     {
         if((status & (1 << (portPinCbObj[i].pin & 0xF))) && (portPinCbObj[i].callback != NULL))
         {

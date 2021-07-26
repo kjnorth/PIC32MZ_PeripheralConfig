@@ -47,7 +47,7 @@ int main(int argc, char** argv) {
         static unsigned long pt = 0;
         if (ct - pt >= 500) {
             pt = ct;
-            Print_EnqueueMsg("enc1 count is %ld\n", Encoders_GetCount(ENC1));
+            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld\n", Encoders_GetCount(ENC1), Encoders_GetCount(ENC2));
         }
         Print_Task();
         

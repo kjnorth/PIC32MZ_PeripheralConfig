@@ -193,27 +193,27 @@
 #define ENC1_0_Get()               ((PORTB >> 4) & 0x1)
 #define ENC1_0_PIN                  GPIO_PIN_RB4
 
-/*** Macros for ENC_A_TEST pin ***/
-#define ENC_A_TEST_Set()               (LATJSET = (1<<13))
-#define ENC_A_TEST_Clear()             (LATJCLR = (1<<13))
-#define ENC_A_TEST_Toggle()            (LATJINV= (1<<13))
-#define ENC_A_TEST_OutputEnable()      (TRISJCLR = (1<<13))
-#define ENC_A_TEST_InputEnable()       (TRISJSET = (1<<13))
-#define ENC_A_TEST_Get()               ((PORTJ >> 13) & 0x1)
-#define ENC_A_TEST_PIN                  GPIO_PIN_RJ13
-#define ENC_A_TEST_InterruptEnable()   (CNENJSET = (1<<13))
-#define ENC_A_TEST_InterruptDisable()  (CNENJCLR = (1<<13))
+/*** Macros for ENC1_A_TEST pin ***/
+#define ENC1_A_TEST_Set()               (LATJSET = (1<<13))
+#define ENC1_A_TEST_Clear()             (LATJCLR = (1<<13))
+#define ENC1_A_TEST_Toggle()            (LATJINV= (1<<13))
+#define ENC1_A_TEST_OutputEnable()      (TRISJCLR = (1<<13))
+#define ENC1_A_TEST_InputEnable()       (TRISJSET = (1<<13))
+#define ENC1_A_TEST_Get()               ((PORTJ >> 13) & 0x1)
+#define ENC1_A_TEST_PIN                  GPIO_PIN_RJ13
+#define ENC1_A_TEST_InterruptEnable()   (CNENJSET = (1<<13))
+#define ENC1_A_TEST_InterruptDisable()  (CNENJCLR = (1<<13))
 
-/*** Macros for ENC_B_TEST pin ***/
-#define ENC_B_TEST_Set()               (LATJSET = (1<<14))
-#define ENC_B_TEST_Clear()             (LATJCLR = (1<<14))
-#define ENC_B_TEST_Toggle()            (LATJINV= (1<<14))
-#define ENC_B_TEST_OutputEnable()      (TRISJCLR = (1<<14))
-#define ENC_B_TEST_InputEnable()       (TRISJSET = (1<<14))
-#define ENC_B_TEST_Get()               ((PORTJ >> 14) & 0x1)
-#define ENC_B_TEST_PIN                  GPIO_PIN_RJ14
-#define ENC_B_TEST_InterruptEnable()   (CNENJSET = (1<<14))
-#define ENC_B_TEST_InterruptDisable()  (CNENJCLR = (1<<14))
+/*** Macros for ENC1_B_TEST pin ***/
+#define ENC1_B_TEST_Set()               (LATJSET = (1<<14))
+#define ENC1_B_TEST_Clear()             (LATJCLR = (1<<14))
+#define ENC1_B_TEST_Toggle()            (LATJINV= (1<<14))
+#define ENC1_B_TEST_OutputEnable()      (TRISJCLR = (1<<14))
+#define ENC1_B_TEST_InputEnable()       (TRISJSET = (1<<14))
+#define ENC1_B_TEST_Get()               ((PORTJ >> 14) & 0x1)
+#define ENC1_B_TEST_PIN                  GPIO_PIN_RJ14
+#define ENC1_B_TEST_InterruptEnable()   (CNENJSET = (1<<14))
+#define ENC1_B_TEST_InterruptDisable()  (CNENJCLR = (1<<14))
 
 /*** Macros for ENC2_B pin ***/
 #define ENC2_B_Set()               (LATBSET = (1<<2))
@@ -304,6 +304,28 @@
 #define ENC5_A_InputEnable()       (TRISBSET = (1<<8))
 #define ENC5_A_Get()               ((PORTB >> 8) & 0x1)
 #define ENC5_A_PIN                  GPIO_PIN_RB8
+
+/*** Macros for ENC2_A_TEST pin ***/
+#define ENC2_A_TEST_Set()               (LATKSET = (1<<1))
+#define ENC2_A_TEST_Clear()             (LATKCLR = (1<<1))
+#define ENC2_A_TEST_Toggle()            (LATKINV= (1<<1))
+#define ENC2_A_TEST_OutputEnable()      (TRISKCLR = (1<<1))
+#define ENC2_A_TEST_InputEnable()       (TRISKSET = (1<<1))
+#define ENC2_A_TEST_Get()               ((PORTK >> 1) & 0x1)
+#define ENC2_A_TEST_PIN                  GPIO_PIN_RK1
+#define ENC2_A_TEST_InterruptEnable()   (CNENKSET = (1<<1))
+#define ENC2_A_TEST_InterruptDisable()  (CNENKCLR = (1<<1))
+
+/*** Macros for ENC2_B_TEST pin ***/
+#define ENC2_B_TEST_Set()               (LATKSET = (1<<2))
+#define ENC2_B_TEST_Clear()             (LATKCLR = (1<<2))
+#define ENC2_B_TEST_Toggle()            (LATKINV= (1<<2))
+#define ENC2_B_TEST_OutputEnable()      (TRISKCLR = (1<<2))
+#define ENC2_B_TEST_InputEnable()       (TRISKSET = (1<<2))
+#define ENC2_B_TEST_Get()               ((PORTK >> 2) & 0x1)
+#define ENC2_B_TEST_PIN                  GPIO_PIN_RK2
+#define ENC2_B_TEST_InterruptEnable()   (CNENKSET = (1<<2))
+#define ENC2_B_TEST_InterruptDisable()  (CNENKCLR = (1<<2))
 
 /*** Macros for ENC6_A pin ***/
 #define ENC6_A_Set()               (LATASET = (1<<1))

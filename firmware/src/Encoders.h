@@ -10,9 +10,10 @@
  * count for its encoder based on the current state of the encoder's A and B
  * phases.
  * 
- * Usage: For each encoder in the system, add a value to the SYSTEM_ENCODER
- * before the TOTAL_ENCODERS item. In Encoders.c, populate the descriptor list
- * with all necessary items.
+ * Usage: For each encoder in the system, add a value to the system_encoder_t
+ * enum before the TOTAL_ENCODERS item. In Encoders.c, define an encoder_t
+ * struct for each encoder, and then populate the EncDescList with a pointer to
+ * each struct along with the A and B pins configured for that encoder.
  *
  * Created on July 21, 2021, 1:13 PM
  */
@@ -29,18 +30,17 @@ extern "C" {
     typedef enum {
         ENC1,
         ENC2,
+        TOTAL_ENCODERS, // only two encoders are wired up now. move down as more encoders are added
         ENC3,
         ENC4,
         ENC5,
         ENC6,
         ENC7,
         ENC8,
-        TOTAL_ENCODERS
     } system_encoder_t;
-    system_encoder_t enc;
 
     void Encoders_Init(void);
-    int32_t Encoders_GetCount(system_encoder_t enc); // how do I force the developer to use an enum value? rn, I can pass in any int without build errors
+    int32_t Encoders_GetCount(system_encoder_t enc);
 
 #ifdef	__cplusplus
 }
