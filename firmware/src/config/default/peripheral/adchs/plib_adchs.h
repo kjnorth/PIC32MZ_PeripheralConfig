@@ -103,6 +103,7 @@ void ADCHS_ChannelEarlyInterruptDisable (ADCHS_CHANNEL_NUM channel);
 bool ADCHS_ChannelResultIsReady(ADCHS_CHANNEL_NUM channel);
 uint16_t ADCHS_ChannelResultGet(ADCHS_CHANNEL_NUM channel);
 
+void ADCHS_CallbackRegister(ADCHS_CHANNEL_NUM channel, ADCHS_CALLBACK callback, uintptr_t context);
 
 bool ADCHS_EOSStatusGet(void);
 

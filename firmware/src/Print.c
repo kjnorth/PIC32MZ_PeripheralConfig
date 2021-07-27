@@ -141,8 +141,10 @@ void Print_Task(void) {
 
     if (Uart5.isRxErrorDetected) {
         Uart5.isRxErrorDetected = false;
-        // do something to indicate that an error occurred
+        // do something to indicate that an error occurred and start over
         LED1_Set();
+        UART5_ReadAbort();
+        printState = SEND_START;
     } else if (Uart5.isRxFinished) {
         /* send start byte or msg or illuminate LED if ack not received correctly */
         char* nextWrite = NULL;

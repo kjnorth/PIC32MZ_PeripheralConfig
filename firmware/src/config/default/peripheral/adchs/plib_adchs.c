@@ -50,6 +50,8 @@
 // *****************************************************************************
 // *****************************************************************************
 
+/* Object to hold callback function and context */
+ADCHS_CALLBACK_OBJECT ADCHS_CallbackObj[44];
 
 
 void ADCHS_Initialize()
@@ -85,6 +87,14 @@ void ADCHS_Initialize()
     ADCCSS1 = 0x0;
     ADCCSS2 = 0x0; 
 
+    /* Result interrupt enable */
+    ADCGIRQEN1 = 0x8;
+    ADCGIRQEN2 = 0x0;
+
+    /* Interrupt Enable */
+    IEC1SET = 0x40000000;
+    IEC2SET = 0x0;
+    IEC3SET = 0x0;
     /* Turn ON ADC */
     ADCCON1bits.ON = 1;
     while(!ADCCON2bits.BGVRRDY); // Wait until the reference voltage is ready
@@ -203,10 +213,25 @@ uint16_t ADCHS_ChannelResultGet(ADCHS_CHANNEL_NUM channel)
 
 }
 
+void ADCHS_CallbackRegister(ADCHS_CHANNEL_NUM channel, ADCHS_CALLBACK callback, uintptr_t context)
+{
+    ADCHS_CallbackObj[channel].callback_fn = callback;
+    ADCHS_CallbackObj[channel].context = context;
+}
 
 bool ADCHS_EOSStatusGet(void)
 {
     return (bool)(ADCCON2bits.EOSRDY);
 }
 
+void ADC_DATA3_InterruptHandler(void)
+{
+    if (ADCHS_CallbackObj[3].callback_fn != NULL)
+    {
+      ADCHS_CallbackObj[3].callback_fn(ADCHS_CH3, ADCHS_CallbackObj[3].context);
+    }
+
+    IFS1CLR = _IFS1_ADCD3IF_MASK;
+
+}
 
