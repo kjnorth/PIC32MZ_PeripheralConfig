@@ -159,13 +159,6 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
-    attributes: {id: BSP_PIN_10_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
     attributes: {id: BSP_PIN_110_FUNCTION_NAME}
     children:
     - type: Values
@@ -1027,13 +1020,6 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
-    attributes: {id: BSP_PIN_30_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
     attributes: {id: BSP_PIN_31_FUNCTION_NAME}
     children:
     - type: Values
@@ -1266,13 +1252,6 @@ children:
         attributes: {value: GPIO}
   - type: String
     attributes: {id: BSP_PIN_45_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
-    attributes: {id: BSP_PIN_46_MODE}
     children:
     - type: Values
       children:
@@ -1636,13 +1615,6 @@ children:
       - type: User
         attributes: {value: AN42}
   - type: String
-    attributes: {id: BSP_PIN_68_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
     attributes: {id: BSP_PIN_69_FUNCTION_NAME}
     children:
     - type: Values
@@ -1720,13 +1692,6 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
-    attributes: {id: BSP_PIN_79_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
     attributes: {id: BSP_PIN_7_FUNCTION_NAME}
     children:
     - type: Values
@@ -1763,13 +1728,6 @@ children:
         attributes: {value: C2RX}
   - type: String
     attributes: {id: BSP_PIN_80_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
-    attributes: {id: BSP_PIN_81_MODE}
     children:
     - type: Values
       children:
@@ -1978,13 +1936,6 @@ children:
       children:
       - type: User
         attributes: {value: DIGITAL}
-  - type: String
-    attributes: {id: BSP_PIN_9_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
   - type: Integer
     attributes: {id: CAN1_CLOCK_FREQUENCY}
     children:
@@ -2084,7 +2035,28 @@ children:
       - type: Dynamic
         attributes: {id: core, value: '0'}
   - type: Combo
+    attributes: {id: CONFIG_DEBUG}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: 'ON'}
+  - type: Combo
     attributes: {id: CONFIG_FSOSCEN}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: 'OFF'}
+  - type: Combo
+    attributes: {id: CONFIG_ICESEL}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: ICS_PGx2}
+  - type: Combo
+    attributes: {id: CONFIG_JTAGEN}
     children:
     - type: Values
       children:
