@@ -30,12 +30,6 @@ uint16_t g_adc_count = 0;
 
 void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 
-/**
- * DEVCFG0
- * ADEVCFG0
- */
-
-
 /*
  * 
  */

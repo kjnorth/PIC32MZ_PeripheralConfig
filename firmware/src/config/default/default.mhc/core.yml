@@ -2042,6 +2042,20 @@ children:
       - type: User
         attributes: {value: 'ON'}
   - type: Combo
+    attributes: {id: CONFIG_FPLLICLK}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: PLL_FRC}
+  - type: Combo
+    attributes: {id: CONFIG_FPLLODIV}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIV_2}
+  - type: Combo
     attributes: {id: CONFIG_FSOSCEN}
     children:
     - type: Values
@@ -2465,6 +2479,48 @@ children:
       children:
       - type: Dynamic
         attributes: {id: core, value: CHANGE_NOTICE_K_InterruptHandler}
+  - type: Boolean
+    attributes: {id: EVIC_132_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: Boolean
+    attributes: {id: EVIC_132_HANDLER_LOCK}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: String
+    attributes: {id: EVIC_132_INTERRUPT_HANDLER}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: USB_Handler}
+  - type: Boolean
+    attributes: {id: EVIC_133_ENABLE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: Boolean
+    attributes: {id: EVIC_133_HANDLER_LOCK}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'false'}
+  - type: String
+    attributes: {id: EVIC_133_INTERRUPT_HANDLER}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: USB_DMA_Handler}
   - type: Boolean
     attributes: {id: EVIC_14_ENABLE}
     children:
@@ -4242,6 +4298,20 @@ children:
       children:
       - type: Dynamic
         attributes: {id: core, value: '100000000'}
+  - type: Boolean
+    attributes: {id: USB_DMA_INTERRUPT_ENABLE_UPDATE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'true'}
+  - type: Boolean
+    attributes: {id: USB_INTERRUPT_ENABLE_UPDATE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: core, value: 'true'}
   - type: Boolean
     attributes: {id: USE_PPS_INPUT_0}
     children:
