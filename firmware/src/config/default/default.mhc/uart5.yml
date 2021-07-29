@@ -50,4 +50,4 @@ children:
       - type: Dynamic
         attributes: {id: uart5, value: '8'}
 - type: ElementPosition
-  attributes: {x: '321', y: '179', id: uart5}
+  attributes: {x: '150', y: '142', id: uart5}

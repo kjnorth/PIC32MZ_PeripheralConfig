@@ -26,4 +26,4 @@ children:
       - type: User
         attributes: {value: 'true'}
 - type: ElementPosition
-  attributes: {x: '323', y: '263', id: spi4}
+  attributes: {x: '19', y: '143', id: spi4}
