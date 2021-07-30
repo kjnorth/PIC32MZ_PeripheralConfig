@@ -178,13 +178,15 @@ void SYS_Initialize ( void* data )
 	GPIO_Initialize();
 
     CORETIMER_Initialize();
-    I2C1_Initialize();
-
     ADCHS_Initialize();
 
 	SPI4_Initialize();
 
+    TMR2_Initialize();
+
     TMR3_Initialize();
+
+    OCMP4_Initialize();
 
 	UART5_Initialize();
 

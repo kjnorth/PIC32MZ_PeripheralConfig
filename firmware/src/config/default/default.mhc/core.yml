@@ -2863,21 +2863,21 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: 'true'}
+        attributes: {id: core, value: 'false'}
   - type: Boolean
     attributes: {id: EVIC_9_HANDLER_LOCK}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: 'true'}
+        attributes: {id: core, value: 'false'}
   - type: String
     attributes: {id: EVIC_9_INTERRUPT_HANDLER}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: TIMER_2_InterruptHandler}
+        attributes: {id: core, value: TIMER_2_Handler}
   - type: Combo
     attributes: {id: EVIC_PRIORITY_1ATTRIBUTE}
     children:
@@ -3996,28 +3996,28 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: tmr2, value: 'true'}
+        attributes: {id: tmr2, value: 'false'}
   - type: Boolean
     attributes: {id: TIMER_2_INTERRUPT_ENABLE_UPDATE}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: 'false'}
+        attributes: {id: core, value: 'true'}
   - type: String
     attributes: {id: TIMER_2_INTERRUPT_HANDLER}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: tmr2, value: TIMER_2_InterruptHandler}
+        attributes: {id: tmr2, value: TIMER_2_Handler}
   - type: Boolean
     attributes: {id: TIMER_2_INTERRUPT_HANDLER_LOCK}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: tmr2, value: 'true'}
+        attributes: {id: tmr2, value: 'false'}
   - type: Boolean
     attributes: {id: TIMER_3_INTERRUPT_ENABLE}
     children:

@@ -4,20 +4,54 @@ attributes: {id: tmr2}
 children:
 - type: Symbols
   children:
+  - type: Hex
+    attributes: {id: TCON_REG_VALUE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr2, value: '0'}
+  - type: Integer
+    attributes: {id: TIMER_CLOCK_FREQ}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr2, value: '100000000'}
   - type: Long
     attributes: {id: TIMER_PERIOD}
     children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: tmr2, value: '65535'}
-  - type: Float
-    attributes: {id: TIMER_TIME_PERIOD_MS}
+        attributes: {id: tmr2, value: '19999'}
+  - type: KeyValueSet
+    attributes: {id: TIMER_PRE_SCALER}
     children:
     - type: Values
       children:
       - type: User
-        attributes: {value: '1.0'}
+        attributes: {value: '7'}
+  - type: Float
+    attributes: {id: TIMER_TIME_PERIOD_MS}
+    children:
+    - type: Attributes
+      children:
+      - type: Float
+        attributes: {id: max}
+        children:
+        - {type: Value, value: '655.37'}
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '200.0'}
+  - type: Combo
+    attributes: {id: TIMER_UNIT}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: microsecond}
   - type: Boolean
     attributes: {id: TMR_INTERRUPT_MODE}
     children:
@@ -25,6 +59,15 @@ children:
       children:
       - type: Dynamic
         attributes: {id: tmr2, value: 'true'}
+      - type: User
+        attributes: {value: 'false'}
+  - type: Integer
+    attributes: {id: TMR_PRESCALER_VALUE}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: tmr2, value: '1'}
   - type: Boolean
     attributes: {id: TMR_SLAVE_INTERRUPT_MODE}
     children:

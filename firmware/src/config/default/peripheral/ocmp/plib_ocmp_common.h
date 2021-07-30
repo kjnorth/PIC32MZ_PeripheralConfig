@@ -1,30 +1,23 @@
 /*******************************************************************************
-  SYS CLK Static Functions for Clock System Service
+  Output Compare (OCMP) Peripheral Library Interface Header File
 
-  Company:
+  Company
     Microchip Technology Inc.
 
-  File Name:
-    plib_clk.c
+  File Name
+    plib_ocmp_common.h
 
-  Summary:
-    SYS CLK static function implementations for the Clock System Service.
+  Summary
+    Data Type definition of the OCMP Peripheral Interface Plib.
 
-  Description:
-    The Clock System Service provides a simple interface to manage the
-    oscillators on Microchip microcontrollers. This file defines the static
-    implementation for the Clock System Service.
+  Description
+    This file defines the Data Types for the OCMP Plib.
 
   Remarks:
-    Static functions incorporate all system clock configuration settings as
-    determined by the user via the Microchip Harmony Configurator GUI.
-    It provides static version of the routines, eliminating the need for an
-    object ID or object handle.
-
-    Static single-open interfaces also eliminate the need for the open handle.
+    None.
 
 *******************************************************************************/
-
+// DOM-IGNORE-BEGIN
 /*******************************************************************************
 * Copyright (C) 2019 Microchip Technology Inc. and its subsidiaries.
 *
@@ -47,60 +40,49 @@
 * ANY WAY RELATED TO THIS SOFTWARE WILL NOT EXCEED THE AMOUNT OF FEES, IF ANY,
 * THAT YOU HAVE PAID DIRECTLY TO MICROCHIP FOR THIS SOFTWARE.
 *******************************************************************************/
+// DOM-IGNORE-END
+
+#ifndef PLIB_OCMP_COMMON_H    // Guards against multiple inclusion
+#define PLIB_OCMP_COMMON_H
+
+// DOM-IGNORE-BEGIN
+#ifdef __cplusplus  // Provide C++ Compatibility
+
+    extern "C" {
+
+#endif
+// DOM-IGNORE-END
 
 // *****************************************************************************
 // *****************************************************************************
-// Section: Include Files
+// Section: Data Types
 // *****************************************************************************
 // *****************************************************************************
 
-#include "device.h"
-#include "plib_clk.h"
-
-// *****************************************************************************
-// *****************************************************************************
-// Section: File Scope Functions
-// *****************************************************************************
-// *****************************************************************************
-
-// *****************************************************************************
-/* Function:
-    void CLK_Initialize( void )
-
-  Summary:
-    Initializes hardware and internal data structure of the System Clock.
-
-  Description:
-    This function initializes the hardware and internal data structure of System
-    Clock Service.
-
-  Remarks:
-    This is configuration values for the static version of the Clock System
-    Service module is determined by the user via the MHC GUI.
-
-    The objective is to eliminate the user's need to be knowledgeable in the
-    function of the 'configuration bits' to configure the system oscillators.
+/*  The following data type definitions are used by the functions in this
+    interface.
 */
 
-void CLK_Initialize( void )
+// *****************************************************************************
+
+typedef void (*OCMP_CALLBACK) (uintptr_t context);
+
+// *****************************************************************************
+// *****************************************************************************
+// Section: Local: **** Do Not Use ****
+// *****************************************************************************
+// *****************************************************************************
+
+typedef struct
 {
-    /* unlock system for clock configuration */
-    SYSKEY = 0x00000000;
-    SYSKEY = 0xAA996655;
-    SYSKEY = 0x556699AA;
+  OCMP_CALLBACK callback;
+  uintptr_t    context;
 
+} OCMP_OBJECT ;
 
-  
-
-    /* Peripheral Module Disable Configuration */
-    PMD1 = 0x1000;
-    PMD2 = 0x3;
-    PMD3 = 0x1f701ff;
-    PMD4 = 0x1f9;
-    PMD5 = 0x301f372f;
-    PMD6 = 0x10830001;
-    PMD7 = 0x500000;
-
-    /* Lock system since done with clock configuration */
-    SYSKEY = 0x33333333;
-}
+// DOM-IGNORE-BEGIN
+#ifdef __cplusplus  // Provide C++ Compatibility
+    }
+#endif
+// DOM-IGNORE-END
+#endif // PLIB_ACC_COMMON_H

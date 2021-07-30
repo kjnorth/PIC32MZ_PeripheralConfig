@@ -62,8 +62,6 @@
 
 void CORE_TIMER_InterruptHandler( void );
 void ADC_DATA3_InterruptHandler( void );
-void I2C1_BUS_InterruptHandler( void );
-void I2C1_MASTER_InterruptHandler( void );
 void CHANGE_NOTICE_J_InterruptHandler( void );
 void CHANGE_NOTICE_K_InterruptHandler( void );
 void SPI4_RX_InterruptHandler( void );
@@ -83,16 +81,6 @@ void __ISR(_CORE_TIMER_VECTOR, ipl1SRS) CORE_TIMER_Handler (void)
 void __ISR(_ADC_DATA3_VECTOR, ipl1SRS) ADC_DATA3_Handler (void)
 {
     ADC_DATA3_InterruptHandler();
-}
-
-void __ISR(_I2C1_BUS_VECTOR, ipl1SRS) I2C1_BUS_Handler (void)
-{
-    I2C1_BUS_InterruptHandler();
-}
-
-void __ISR(_I2C1_MASTER_VECTOR, ipl1SRS) I2C1_MASTER_Handler (void)
-{
-    I2C1_MASTER_InterruptHandler();
 }
 
 void __ISR(_CHANGE_NOTICE_J_VECTOR, ipl1SRS) CHANGE_NOTICE_J_Handler (void)
