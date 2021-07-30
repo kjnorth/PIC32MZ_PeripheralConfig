@@ -159,6 +159,13 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
+    attributes: {id: BSP_PIN_10_MODE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIGITAL}
+  - type: String
     attributes: {id: BSP_PIN_110_FUNCTION_NAME}
     children:
     - type: Values
@@ -1020,6 +1027,13 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
+    attributes: {id: BSP_PIN_30_MODE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIGITAL}
+  - type: String
     attributes: {id: BSP_PIN_31_FUNCTION_NAME}
     children:
     - type: Values
@@ -1252,6 +1266,13 @@ children:
         attributes: {value: GPIO}
   - type: String
     attributes: {id: BSP_PIN_45_MODE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIGITAL}
+  - type: String
+    attributes: {id: BSP_PIN_46_MODE}
     children:
     - type: Values
       children:
@@ -1615,6 +1636,13 @@ children:
       - type: User
         attributes: {value: AN42}
   - type: String
+    attributes: {id: BSP_PIN_68_MODE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIGITAL}
+  - type: String
     attributes: {id: BSP_PIN_69_FUNCTION_NAME}
     children:
     - type: Values
@@ -1692,6 +1720,13 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
+    attributes: {id: BSP_PIN_79_MODE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIGITAL}
+  - type: String
     attributes: {id: BSP_PIN_7_FUNCTION_NAME}
     children:
     - type: Values
@@ -1728,6 +1763,13 @@ children:
         attributes: {value: C2RX}
   - type: String
     attributes: {id: BSP_PIN_80_MODE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: DIGITAL}
+  - type: String
+    attributes: {id: BSP_PIN_81_MODE}
     children:
     - type: Values
       children:
