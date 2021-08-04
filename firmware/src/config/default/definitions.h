@@ -58,6 +58,7 @@
 #include "peripheral/evic/plib_evic.h"
 #include "peripheral/ocmp/plib_ocmp4.h"
 #include "peripheral/uart/plib_uart5.h"
+#include "peripheral/nvm/plib_nvm.h"
 
 // DOM-IGNORE-BEGIN
 #ifdef __cplusplus  // Provide C++ Compatibility

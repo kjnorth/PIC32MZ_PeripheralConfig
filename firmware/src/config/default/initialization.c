@@ -55,7 +55,7 @@
 // ****************************************************************************
 
 /*** DEVCFG0 ***/
-#pragma config DEBUG =      ON
+#pragma config DEBUG =      OFF
 #pragma config JTAGEN =     OFF
 #pragma config ICESEL =     ICS_PGx2
 #pragma config TRCEN =      OFF
@@ -189,6 +189,8 @@ void SYS_Initialize ( void* data )
     OCMP4_Initialize();
 
 	UART5_Initialize();
+
+    NVM_Initialize();
 
 
 

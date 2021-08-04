@@ -6,20 +6,20 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: AB67D8A7D0606ADFF3E9184E6CB5B5F9
-- generatedChecksum: 9AF1DA4CC2E67632F5CE28AF68BFF069
+- generatedChecksum: 33CFE21A42EC0736C4B13E2CDCA66634
   logicalPath: config/default
   name: initialization.c
   physicalPath: ''
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 9AF1DA4CC2E67632F5CE28AF68BFF069
-- generatedChecksum: 6B360B47015BE2A62BDD2924BA640184
+  userChecksum: 33CFE21A42EC0736C4B13E2CDCA66634
+- generatedChecksum: B048435E6483B7E8F3ACF557BD48ECBA
   logicalPath: config/default
   name: interrupts.c
   physicalPath: ''
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 6B360B47015BE2A62BDD2924BA640184
+  userChecksum: B048435E6483B7E8F3ACF557BD48ECBA
 - generatedChecksum: null
   logicalPath: ''
   name: main.c
@@ -48,13 +48,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 1C64A0CC3068C1F1EB55F6817B1579A6
-- generatedChecksum: 08401371908E4FB4CE4B8389BF108EB3
+- generatedChecksum: 8D844BAA48C03DDD7E65118133D63ACE
   logicalPath: config/default/peripheral/evic
   name: plib_evic.c
   physicalPath: peripheral/evic
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 08401371908E4FB4CE4B8389BF108EB3
+  userChecksum: 8D844BAA48C03DDD7E65118133D63ACE
 - generatedChecksum: 7B953AE6B08FF916678BA4A044FB1165
   logicalPath: config/default/peripheral/gpio
   name: plib_gpio.c
@@ -62,6 +62,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 7B953AE6B08FF916678BA4A044FB1165
+- generatedChecksum: 451DBD4978CF3ECC195A212174414B4F
+  logicalPath: config/default/peripheral/nvm
+  name: plib_nvm.c
+  physicalPath: peripheral/nvm
+  security: NON_SECURE
+  type: SOURCE
+  userChecksum: 451DBD4978CF3ECC195A212174414B4F
 - generatedChecksum: 48B808C53AE6D2F0D4807CC463D2B4B7
   logicalPath: config/default/peripheral/ocmp
   name: plib_ocmp4.c
@@ -104,13 +111,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 7806B30ECAE0D18D08CD583D8775530D
-- generatedChecksum: 15AB48165CBCA3A52D91149F36570BC7
+- generatedChecksum: E1C6D4F0250066AB449A14608C023022
   logicalPath: config/default
   name: definitions.h
   physicalPath: ''
   security: NON_SECURE
   type: HEADER
-  userChecksum: 15AB48165CBCA3A52D91149F36570BC7
+  userChecksum: E1C6D4F0250066AB449A14608C023022
 - generatedChecksum: E189C26B2269F8DE46033CCD0621958D
   logicalPath: config/default
   name: device.h
@@ -167,6 +174,13 @@ files:
   security: NON_SECURE
   type: HEADER
   userChecksum: 3F653745FEEE48C67280663F7BE3746B
+- generatedChecksum: 7C954B20EDAB3F13455008470691E59C
+  logicalPath: config/default/peripheral/nvm
+  name: plib_nvm.h
+  physicalPath: peripheral/nvm
+  security: NON_SECURE
+  type: HEADER
+  userChecksum: 7C954B20EDAB3F13455008470691E59C
 - generatedChecksum: C3B4459C39595482A48CB50EBE595C83
   logicalPath: config/default/peripheral/ocmp
   name: plib_ocmp4.h

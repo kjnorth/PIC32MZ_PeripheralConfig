@@ -93,7 +93,7 @@ bool Print_EnqueueMsg(const char* fmt, ...) {
     va_list args;
     va_start(args, fmt);
     vsprintf(message, fmt, args);
-    uint16_t sizeMessage = strlen(message) + 1; // +1 to include NULL terminator
+    uint16_t sizeMessage = strlen(message) + sizeof (uint8_t); // + sizeof (uint8_t) to include NULL terminator
     va_end(args);
 
     if ((sizeMessage <= PRINT_MAX_STR_LEN) && !Print_IsQueueFull()) {
@@ -156,12 +156,12 @@ void Print_Task(void) {
                 if (!Print_IsQueueEmpty()) {
                     // queue is non-empty, initiate the send of a message
                     nextWrite = (char*) &startByte;
-                    sizeNextWrite = 1;
+                    sizeNextWrite = sizeof (uint8_t);
                     printState = VERIFY_ACK_START_SEND_MSG;
                 }
                 break;
             case VERIFY_ACK_START_SEND_MSG:
-                if (response == PRINT_ACK) {                    
+                if (response == PRINT_ACK) {
                     response = 0;
                     if (Print_DequeueMsg(&nextWrite, &sizeNextWrite)) {
                         printState = VERIFY_ACK_MSG;
@@ -181,7 +181,7 @@ void Print_Task(void) {
                 }
                 break;
         }
-        
+
         if (nextWrite != NULL) {
             UART5_Write(nextWrite, sizeNextWrite);
             Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
@@ -189,7 +189,7 @@ void Print_Task(void) {
     } else if (Uart5.isTxFinished) {
         /* initiate read of ack */
         Uart5.isTxFinished = false;
-        UART5_Read(&response, 1);
+        UART5_Read(&response, sizeof (uint8_t));
         readStartTime = Time_GetMs();
     } else if (UART5_ReadIsBusy()) {
         uint32_t curTime = Time_GetMs();

@@ -66,6 +66,7 @@ void CHANGE_NOTICE_J_InterruptHandler( void );
 void CHANGE_NOTICE_K_InterruptHandler( void );
 void SPI4_RX_InterruptHandler( void );
 void SPI4_TX_InterruptHandler( void );
+void NVM_InterruptHandler( void );
 void UART5_FAULT_InterruptHandler( void );
 void UART5_RX_InterruptHandler( void );
 void UART5_TX_InterruptHandler( void );
@@ -101,6 +102,11 @@ void __ISR(_SPI4_RX_VECTOR, ipl1SRS) SPI4_RX_Handler (void)
 void __ISR(_SPI4_TX_VECTOR, ipl1SRS) SPI4_TX_Handler (void)
 {
     SPI4_TX_InterruptHandler();
+}
+
+void __ISR(_FLASH_CONTROL_VECTOR, ipl1SRS) FLASH_CONTROL_Handler (void)
+{
+    NVM_InterruptHandler();
 }
 
 void __ISR(_UART5_FAULT_VECTOR, ipl1SRS) UART5_FAULT_Handler (void)

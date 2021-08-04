@@ -23,6 +23,9 @@
             <logicalFolder name="f6" displayName="gpio" projectFiles="true">
               <itemPath>../src/config/default/peripheral/gpio/plib_gpio.h</itemPath>
             </logicalFolder>
+            <logicalFolder name="f10" displayName="nvm" projectFiles="true">
+              <itemPath>../src/config/default/peripheral/nvm/plib_nvm.h</itemPath>
+            </logicalFolder>
             <logicalFolder name="f1" displayName="ocmp" projectFiles="true">
               <itemPath>../src/config/default/peripheral/ocmp/plib_ocmp_common.h</itemPath>
               <itemPath>../src/config/default/peripheral/ocmp/plib_ocmp4.h</itemPath>
@@ -84,6 +87,9 @@
             <logicalFolder name="f6" displayName="gpio" projectFiles="true">
               <itemPath>../src/config/default/peripheral/gpio/plib_gpio.c</itemPath>
             </logicalFolder>
+            <logicalFolder name="f10" displayName="nvm" projectFiles="true">
+              <itemPath>../src/config/default/peripheral/nvm/plib_nvm.c</itemPath>
+            </logicalFolder>
             <logicalFolder name="f1" displayName="ocmp" projectFiles="true">
               <itemPath>../src/config/default/peripheral/ocmp/plib_ocmp4.c</itemPath>
             </logicalFolder>
@@ -122,6 +128,7 @@
         <itemPath>../src/config/default/default.mhc/core_timer.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/dfp.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/GraphSettings.yml</itemPath>
+        <itemPath>../src/config/default/default.mhc/nvm.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/ocmp4.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/project.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/settings.yml</itemPath>
@@ -317,7 +324,7 @@
       </C32Global>
       <PICkit3PlatformTool>
         <property key="ADC" value="true"/>
-        <property key="AutoSelectMemRanges" value="auto"/>
+        <property key="AutoSelectMemRanges" value="manual"/>
         <property key="CAN1" value="true"/>
         <property key="CAN2" value="true"/>
         <property key="CHANGE NOTICE A" value="true"/>
@@ -390,7 +397,6 @@
         <property key="UART5" value="true"/>
         <property key="UART6" value="true"/>
         <property key="debugoptions.useswbreakpoints" value="false"/>
-        <property key="firmware.download.all" value="false"/>
         <property key="hwtoolclock.frcindebug" value="false"/>
         <property key="memories.aux" value="false"/>
         <property key="memories.bootflash" value="true"/>
@@ -404,7 +410,7 @@
         <property key="memories.instruction.ram.ranges"
                   value="${memories.instruction.ram.ranges}"/>
         <property key="memories.programmemory" value="true"/>
-        <property key="memories.programmemory.ranges" value="1d000000-1d003fff"/>
+        <property key="memories.programmemory.ranges" value="1d000000-1d00ffff"/>
         <property key="poweroptions.powerenable" value="false"/>
         <property key="programmertogo.imagename" value="kodiak_peripheral_config"/>
         <property key="programoptions.donoteraseauxmem" value="false"/>
@@ -415,8 +421,8 @@
                   value="${programoptions.preservedataflash.ranges}"/>
         <property key="programoptions.preserveeeprom" value="false"/>
         <property key="programoptions.preserveeeprom.ranges" value=""/>
-        <property key="programoptions.preserveprogram.ranges" value=""/>
-        <property key="programoptions.preserveprogramrange" value="false"/>
+        <property key="programoptions.preserveprogram.ranges" value="1d00c000-1d00ffff"/>
+        <property key="programoptions.preserveprogramrange" value="true"/>
         <property key="programoptions.preserveuserid" value="false"/>
         <property key="programoptions.programcalmem" value="false"/>
         <property key="programoptions.programuserotp" value="false"/>
