@@ -35,11 +35,11 @@ void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 uint16_t PWM_CompareValueGet(uint8_t dutyCycle);
 void SPIComm(uint8_t sendData);
 
-static volatile bool transferDone = false;
+volatile bool transferDone = false;
 #define NVM
 #ifdef NVM
-static void eventHandler(uintptr_t context);
-static void NVM_Test(void);
+void NVM_Callback(uintptr_t context);
+void NVM_Test(void);
 #endif
 
 /*
@@ -56,8 +56,7 @@ int main(int argc, char** argv) {
     TMR2_Start(); // for OCMP4
 
 #ifdef NVM
-    NVM_CallbackRegister(eventHandler, (uintptr_t) NULL);
-//    NVM_Test();
+    NVM_CallbackRegister(NVM_Callback, (uintptr_t) NULL);
 #endif
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
@@ -68,7 +67,9 @@ int main(int argc, char** argv) {
 
         static bool isTested = false;
         if (dutyCycle > 90 && !isTested) {
+#ifdef NVM
             NVM_Test();
+#endif
             isTested = true;
         }
         
@@ -117,22 +118,14 @@ void SPIComm(uint8_t sendData) {
 
 #ifdef NVM
 
-void eventHandler(uintptr_t context) {
+void NVM_Callback(uintptr_t context) {
     transferDone = true;
 }
 
 #define BUFFER_SIZE (100u)
 #define NVM_READ_SIZE (BUFFER_SIZE * sizeof(uint32_t))
 
-/**
- * TODO: write WORDS from 1-100 and verify that it is working properly.
- * Then reprogram chip, don't write data again, but read it to make sure that
- * it is still there.
- * If both of those work, call it good
- */
-
 void NVM_Test(void) {
-    uint32_t address = NVM_PRESERVE_MEMORY_START_ADDR;
     static uint32_t writeData[BUFFER_SIZE] CACHE_ALIGN;
     static uint32_t readData[BUFFER_SIZE];
     uint32_t i;
@@ -143,12 +136,13 @@ void NVM_Test(void) {
 
     while (NVM_IsBusy() == true);
 
-    /* write
+    //* write
     NVM_PageErase(NVM_PRESERVE_MEMORY_START_ADDR);
     while (transferDone == false);
     transferDone = false;
 
     // write 100 chunks of uint32_t
+    uint32_t address = NVM_PRESERVE_MEMORY_START_ADDR;
     for (i = 0; i < BUFFER_SIZE; i++) {
         // write a word into NVM
         NVM_WordWrite(writeData[i], address);
@@ -165,7 +159,5 @@ void NVM_Test(void) {
     if (!memcmp(writeData, readData, NVM_READ_SIZE)) {
         LED1_Set();
     }
-    Print_EnqueueMsg("final row addr 0x%X, rd[0] %lu, rd[1] %lu, rd[50] %lu, rd[99] %lu, ans %u\n",
-            address, readData[0], readData[1], readData[50], readData[99], 0-4096);
 }
 #endif

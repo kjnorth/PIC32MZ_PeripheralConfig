@@ -2082,7 +2082,7 @@ children:
     - type: Values
       children:
       - type: User
-        attributes: {value: 'OFF'}
+        attributes: {value: 'ON'}
   - type: Combo
     attributes: {id: CONFIG_FPLLICLK}
     children:
