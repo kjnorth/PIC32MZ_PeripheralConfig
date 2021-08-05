@@ -115,8 +115,15 @@ void eventHandler(uintptr_t context) {
     transferDone = true;
 }
 
-#define NVM_READ_WRITE_SIZE (NVM_FLASH_PAGESIZE)
-#define BUFFER_SIZE (NVM_READ_WRITE_SIZE / sizeof (uint32_t))
+#define BUFFER_SIZE (100u)
+#define NVM_READ_SIZE (BUFFER_SIZE * sizeof(uint32_t))
+
+/**
+ * TODO: write WORDS from 1-100 and verify that it is working properly.
+ * Then reprogram chip, don't write data again, but read it to make sure that
+ * it is still there.
+ * If both of those work, call it good
+ */
 
 void NVM_Test(void) {
     uint32_t address = NVM_PRESERVE_MEMORY_START_ADDR;
@@ -124,38 +131,39 @@ void NVM_Test(void) {
     static uint32_t readData[BUFFER_SIZE];
     uint32_t i;
 
-    writeData[0] = 12835;
-    writeData[1] = 43110;
-//    writeData[BUFFER_SIZE-1] = 3210;
-//    writeData[BUFFER_SIZE] = 699001;
+    for (i = 0; i < BUFFER_SIZE; i++) {
+        writeData[i] = i + 1;
+    }
 
     while (NVM_IsBusy() == true);
     LED1_Set();
 
+    //* write
     NVM_PageErase(NVM_PRESERVE_MEMORY_START_ADDR);
     while (transferDone == false);
     transferDone = false;
 
-    for (i = 0; i < NVM_READ_WRITE_SIZE; i += NVM_FLASH_ROWSIZE) {
-        uint32_t ptrInc = 0;
-        // program a row of data
-        NVM_RowWrite(writeData + ptrInc, address);
-        // wait for program to finish
+    // write 100 chunks of uint32_t
+    for (i = 0; i < BUFFER_SIZE; i++) {
+        // write a word into NVM
+        NVM_WordWrite(writeData[i], address);
+        // wait for write to finish
         while (transferDone == false);
         transferDone = false;
 
-        ptrInc += NVM_FLASH_ROWSIZE;
-        address += NVM_FLASH_ROWSIZE;
+        address += sizeof (uint32_t);
     }
     LED1_Clear();
+    //*/
 
-    NVM_Read(readData, NVM_READ_WRITE_SIZE, NVM_PRESERVE_MEMORY_START_ADDR);
-    if (!memcmp(writeData, readData, NVM_READ_WRITE_SIZE)) {
+    NVM_Read(readData, NVM_READ_SIZE, NVM_PRESERVE_MEMORY_START_ADDR);
+
+    if (!memcmp(writeData, readData, NVM_READ_SIZE)) {
         LED1_Set();
     } else {
-        Print_EnqueueMsg("data read does not match data written.. sizeof writeData %u\n", sizeof(writeData));
+        Print_EnqueueMsg("data read does not match data written.. sizeof writeData %u\n", sizeof (writeData));
     }
-    Print_EnqueueMsg("final row addr 0x%X, rd[0] %lu, rd[1] %lu, rd[buf size-1] %lu, rd[buf size] %lu\n",
-            address, readData[0], readData[1], readData[BUFFER_SIZE-1], readData[BUFFER_SIZE]);
+    Print_EnqueueMsg("final row addr 0x%X, rd[0] %lu, rd[1] %lu, rd[50] %lu, rd[99] %lu\n",
+            address, readData[0], readData[1], readData[50], readData[99]);
 }
 #endif
