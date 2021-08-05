@@ -57,7 +57,7 @@ int main(int argc, char** argv) {
 
 #ifdef NVM
     NVM_CallbackRegister(eventHandler, (uintptr_t) NULL);
-    NVM_Test();
+//    NVM_Test();
 #endif
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
@@ -66,6 +66,12 @@ int main(int argc, char** argv) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
 
+        static bool isTested = false;
+        if (dutyCycle > 90 && !isTested) {
+            NVM_Test();
+            isTested = true;
+        }
+        
         unsigned long ct = Time_GetMs();
         static unsigned long pt = 0;
         if (ct - pt >= 5000) {
@@ -136,9 +142,8 @@ void NVM_Test(void) {
     }
 
     while (NVM_IsBusy() == true);
-    LED1_Set();
 
-    //* write
+    /* write
     NVM_PageErase(NVM_PRESERVE_MEMORY_START_ADDR);
     while (transferDone == false);
     transferDone = false;
@@ -153,17 +158,14 @@ void NVM_Test(void) {
 
         address += sizeof (uint32_t);
     }
-    LED1_Clear();
     //*/
 
     NVM_Read(readData, NVM_READ_SIZE, NVM_PRESERVE_MEMORY_START_ADDR);
 
     if (!memcmp(writeData, readData, NVM_READ_SIZE)) {
         LED1_Set();
-    } else {
-        Print_EnqueueMsg("data read does not match data written.. sizeof writeData %u\n", sizeof (writeData));
     }
-    Print_EnqueueMsg("final row addr 0x%X, rd[0] %lu, rd[1] %lu, rd[50] %lu, rd[99] %lu\n",
-            address, readData[0], readData[1], readData[50], readData[99]);
+    Print_EnqueueMsg("final row addr 0x%X, rd[0] %lu, rd[1] %lu, rd[50] %lu, rd[99] %lu, ans %u\n",
+            address, readData[0], readData[1], readData[50], readData[99], 0-4096);
 }
 #endif
