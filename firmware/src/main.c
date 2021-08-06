@@ -5,13 +5,14 @@
  * Created on June 10, 2021, 4:07 PM
  */
 
+#include <stdarg.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
-#include <stdarg.h>
 #include <string.h>
 
 #include "Encoders.h"
+#include "NVData.h"
 #include "Print.h"
 #include "Time.h"
 
@@ -26,21 +27,12 @@
 
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
-#define NVM_PRESERVE_MEMORY_START_ADDR (0x9D00C000u)
-
 uint16_t g_adc_count = 0;
 volatile uint8_t dutyCycle = 0;
 
 void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 uint16_t PWM_CompareValueGet(uint8_t dutyCycle);
 void SPIComm(uint8_t sendData);
-
-volatile bool transferDone = false;
-#define NVM
-#ifdef NVM
-void NVM_Callback(uintptr_t context);
-void NVM_Test(void);
-#endif
 
 /*
  * 
@@ -54,10 +46,7 @@ int main(int argc, char** argv) {
     TMR3_Start(); // for ADC    
     OCMP4_Enable();
     TMR2_Start(); // for OCMP4
-
-#ifdef NVM
-    NVM_CallbackRegister(NVM_Callback, (uintptr_t) NULL);
-#endif
+    NVData_Init();
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
 
@@ -67,9 +56,7 @@ int main(int argc, char** argv) {
 
         static bool isTested = false;
         if (dutyCycle > 90 && !isTested) {
-#ifdef NVM
-            NVM_Test();
-#endif
+            NVData_Test();
             isTested = true;
         }
         
@@ -115,49 +102,3 @@ void SPIComm(uint8_t sendData) {
     uint8_t recData = 0;
     SPI4_WriteRead(&sendData, 1, &recData, 1);
 }
-
-#ifdef NVM
-
-void NVM_Callback(uintptr_t context) {
-    transferDone = true;
-}
-
-#define BUFFER_SIZE (100u)
-#define NVM_READ_SIZE (BUFFER_SIZE * sizeof(uint32_t))
-
-void NVM_Test(void) {
-    static uint32_t writeData[BUFFER_SIZE] CACHE_ALIGN;
-    static uint32_t readData[BUFFER_SIZE];
-    uint32_t i;
-
-    for (i = 0; i < BUFFER_SIZE; i++) {
-        writeData[i] = i + 1;
-    }
-
-    while (NVM_IsBusy() == true);
-
-    //* write
-    NVM_PageErase(NVM_PRESERVE_MEMORY_START_ADDR);
-    while (transferDone == false);
-    transferDone = false;
-
-    // write 100 chunks of uint32_t
-    uint32_t address = NVM_PRESERVE_MEMORY_START_ADDR;
-    for (i = 0; i < BUFFER_SIZE; i++) {
-        // write a word into NVM
-        NVM_WordWrite(writeData[i], address);
-        // wait for write to finish
-        while (transferDone == false);
-        transferDone = false;
-
-        address += sizeof (uint32_t);
-    }
-    //*/
-
-    NVM_Read(readData, NVM_READ_SIZE, NVM_PRESERVE_MEMORY_START_ADDR);
-
-    if (!memcmp(writeData, readData, NVM_READ_SIZE)) {
-        LED1_Set();
-    }
-}
-#endif

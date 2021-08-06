@@ -180,6 +180,8 @@ void SYS_Initialize ( void* data )
     CORETIMER_Initialize();
     ADCHS_Initialize();
 
+    TMR4_Initialize();
+
 	SPI4_Initialize();
 
     TMR2_Initialize();

@@ -61,6 +61,7 @@
 
 
 void CORE_TIMER_InterruptHandler( void );
+void TIMER_4_InterruptHandler( void );
 void ADC_DATA3_InterruptHandler( void );
 void CHANGE_NOTICE_J_InterruptHandler( void );
 void CHANGE_NOTICE_K_InterruptHandler( void );
@@ -77,6 +78,11 @@ void UART5_TX_InterruptHandler( void );
 void __ISR(_CORE_TIMER_VECTOR, ipl1SRS) CORE_TIMER_Handler (void)
 {
     CORE_TIMER_InterruptHandler();
+}
+
+void __ISR(_TIMER_4_VECTOR, ipl1SRS) TIMER_4_Handler (void)
+{
+    TIMER_4_InterruptHandler();
 }
 
 void __ISR(_ADC_DATA3_VECTOR, ipl1SRS) ADC_DATA3_Handler (void)
