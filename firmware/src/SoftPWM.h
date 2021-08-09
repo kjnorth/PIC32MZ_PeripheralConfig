@@ -3,10 +3,20 @@
  * Author: Kodiak North
  * 
  * Description: Module utilizes the TMR4 peripheral to generate PWM with GPIO
- * pins. Due to hardware constraints, maximum frequency is limited to 10kHz.
+ * pins.
+ * 
+ * PWM frequency is set by using the PBCLK3_FREQ_HZ and TMR4_PRESCALER macros.
+ * If the developer decides to change the PBCLK3 frequency or timer4's
+ * prescaler, these macros must be updated to the appropriate values.
+ * 
+ * Due to hardware constraints, maximum PWM frequency is limited to 10kHz.
  * Default frequency is 5kHz. Maximum number of pins is 16 but this can be
  * changed if desired. MICRO_NUM_PINS should be set with the number of
- * available pins on the chosen microcontroller
+ * available pins on the chosen microcontroller.
+ * 
+ * When enabling a pin for the first time, its duty cycle should be set first:
+ *      SoftPWM_PinSetDuty(<pin>, <duty>);
+ *      SoftPWM_PinEnable(<pin>);
  *
  * Created on August 6, 2021, 3:08 PM
  */
@@ -42,7 +52,7 @@ extern "C" {
     bool SoftPWM_PinAdd(GPIO_PIN pin);
     void SoftPWM_PinEnable(GPIO_PIN pin);
     void SoftPWM_PinDisable(GPIO_PIN pin);
-    void SoftPWM_PinInvert(GPIO_PIN pin);
+    void SoftPWM_PinDisableAll(void);
     void SoftPWM_PinSetDuty(GPIO_PIN pin, uint8_t duty);
     bool SoftPWM_SetFrequency(uint16_t freqHz);
     uint16_t SoftPWM_GetFrequency(void);

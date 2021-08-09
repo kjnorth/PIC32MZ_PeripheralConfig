@@ -174,13 +174,13 @@ files:
   security: NON_SECURE
   type: HEADER
   userChecksum: 815CCB981B6CB758464D89480121DC08
-- generatedChecksum: 3F653745FEEE48C67280663F7BE3746B
+- generatedChecksum: AC42196FCEF9CDE3D6C65FC0B980D93D
   logicalPath: config/default/peripheral/gpio
   name: plib_gpio.h
   physicalPath: peripheral/gpio
   security: NON_SECURE
   type: HEADER
-  userChecksum: 3F653745FEEE48C67280663F7BE3746B
+  userChecksum: AC42196FCEF9CDE3D6C65FC0B980D93D
 - generatedChecksum: 7C954B20EDAB3F13455008470691E59C
   logicalPath: config/default/peripheral/nvm
   name: plib_nvm.h

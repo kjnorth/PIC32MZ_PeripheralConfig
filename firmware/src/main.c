@@ -14,6 +14,7 @@
 #include "Encoders.h"
 #include "NVData.h"
 #include "Print.h"
+#include "SoftPWM.h"
 #include "Time.h"
 
 #include "definitions.h"
@@ -28,11 +29,13 @@
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
 uint16_t g_adc_count = 0;
-volatile uint8_t dutyCycle = 0;
+volatile uint8_t curDutyCycle = 0;
+uint8_t preDutyCycle = 0;
 
 void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
-uint16_t PWM_CompareValueGet(uint8_t dutyCycle);
+uint16_t PWM_CompareValueGet(uint8_t curDutyCycle);
 void SPIComm(uint8_t sendData);
+bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop);
 
 /*
  * 
@@ -47,6 +50,12 @@ int main(int argc, char** argv) {
     OCMP4_Enable();
     TMR2_Start(); // for OCMP4
     NVData_Init();
+    SoftPWM_Init();
+    SoftPWM_PinAdd(PWM_SOFT1_PIN);
+    SoftPWM_PinAdd(PWM_SOFT2_PIN);
+    SoftPWM_PinAdd(PWM_SOFT3_PIN);
+    SoftPWM_PinAdd(PWM_SOFT4_PIN);
+    SoftPWM_PinAdd(PWM_SOFT5_PIN);
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
 
@@ -54,18 +63,47 @@ int main(int argc, char** argv) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
 
-        static bool isTested = false;
-        if (dutyCycle > 90 && !isTested) {
-            NVData_Test();
-            isTested = true;
+        if (IsValueWithinRange(curDutyCycle, preDutyCycle, 2, 2)) {
+            preDutyCycle = curDutyCycle;
+            if (curDutyCycle <= 5) {
+                SoftPWM_PinDisableAll();
+            } else if (curDutyCycle > 5 && curDutyCycle <= 35) {
+                SoftPWM_PinSetDuty(PWM_SOFT1_PIN, 20);
+                SoftPWM_PinEnable(PWM_SOFT1_PIN);
+
+//                SoftPWM_PinSetDuty(PWM_SOFT2_PIN, 40);
+//                SoftPWM_PinEnable(PWM_SOFT2_PIN);
+//
+//                SoftPWM_PinSetDuty(PWM_SOFT3_PIN, 60);
+//                SoftPWM_PinEnable(PWM_SOFT3_PIN);
+//
+//                SoftPWM_PinSetDuty(PWM_SOFT4_PIN, 80);
+//                SoftPWM_PinEnable(PWM_SOFT4_PIN);
+//
+//                SoftPWM_PinSetDuty(PWM_SOFT5_PIN, 100);
+//                SoftPWM_PinEnable(PWM_SOFT5_PIN);
+            } else if (curDutyCycle > 35 && curDutyCycle <= 60) {
+                SoftPWM_SetFrequency(50);
+            } else if (curDutyCycle > 60 && curDutyCycle <= 80) {
+                SoftPWM_SetFrequency(3750);
+            } else if (curDutyCycle > 80 && curDutyCycle <= 100) {
+                SoftPWM_SetFrequency(10000);
+            }
         }
         
+        /* test of the nvm module
+        static bool isTested = false;
+        if (curDutyCycle > 90 && !isTested) {
+            NVData_Test();
+            isTested = true;
+        } //*/
+
         unsigned long ct = Time_GetMs();
         static unsigned long pt = 0;
         if (ct - pt >= 5000) {
             pt = ct;
-            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u\n",
-                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), dutyCycle);
+            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u, freq %u\n",
+                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());
         }
         Print_Task();
     }
@@ -78,22 +116,23 @@ int main(int argc, char** argv) {
  * route OC4 to an LED and watch the brightness change as input voltage varies :)
  */
 void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context) {
-    g_adc_count = ADCHS_ChannelResultGet(ADCHS_CH3);
+    g_adc_count = ADC_MAX_COUNT - ADCHS_ChannelResultGet(ADCHS_CH3);
     // set pwm based on g_adc_count
-    dutyCycle = (uint8_t) (g_adc_count * ((float) PWM_MAX_DUTY_CYCLE / (float) ADC_MAX_COUNT));
-    OCMP4_CompareSecondaryValueSet(PWM_CompareValueGet(dutyCycle));
+    curDutyCycle = (uint8_t) (g_adc_count * ((float) PWM_MAX_DUTY_CYCLE / (float) ADC_MAX_COUNT));
+    OCMP4_CompareSecondaryValueSet(PWM_CompareValueGet(curDutyCycle));
+    curDutyCycle = PWM_MAX_DUTY_CYCLE - curDutyCycle;
 }
 
 /**
  * 
- * @param dutyCycle - value from 0 to 100
+ * @param curDutyCycle - value from 0 to 100
  * @return OCxRS - OCMPx secondary register value for the desired duty cycle
  */
-uint16_t PWM_CompareValueGet(uint8_t dutyCycle) {
+uint16_t PWM_CompareValueGet(uint8_t curDutyCycle) {
     uint16_t OCxRS = 0;
-    if (dutyCycle <= PWM_MAX_DUTY_CYCLE) {
-        // OCxRS = [dutyCycle * (PR + 1)] : 0 <= dutyCycle <= 1
-        OCxRS = (uint16_t) (((float) dutyCycle / (float) PWM_MAX_DUTY_CYCLE) * (TMR2_PeriodGet() + 1));
+    if (curDutyCycle <= PWM_MAX_DUTY_CYCLE) {
+        // OCxRS = [curDutyCycle * (PR + 1)] : 0 <= curDutyCycle <= 1
+        OCxRS = (uint16_t) (((float) curDutyCycle / (float) PWM_MAX_DUTY_CYCLE) * (TMR2_PeriodGet() + 1));
     }
     return OCxRS;
 }
@@ -101,4 +140,8 @@ uint16_t PWM_CompareValueGet(uint8_t dutyCycle) {
 void SPIComm(uint8_t sendData) {
     uint8_t recData = 0;
     SPI4_WriteRead(&sendData, 1, &recData, 1);
+}
+
+bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop) {
+  return (valueToCheck >= (valueForCompare - leftSlop)) && (valueToCheck <= (valueForCompare + rightSlop));
 }

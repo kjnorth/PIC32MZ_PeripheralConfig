@@ -428,6 +428,42 @@
 #define CAN2_RX_Get()               ((PORTF >> 8) & 0x1)
 #define CAN2_RX_PIN                  GPIO_PIN_RF8
 
+/*** Macros for PWM_SOFT1 pin ***/
+#define PWM_SOFT1_Set()               (LATHSET = (1<<8))
+#define PWM_SOFT1_Clear()             (LATHCLR = (1<<8))
+#define PWM_SOFT1_Toggle()            (LATHINV= (1<<8))
+#define PWM_SOFT1_OutputEnable()      (TRISHCLR = (1<<8))
+#define PWM_SOFT1_InputEnable()       (TRISHSET = (1<<8))
+#define PWM_SOFT1_Get()               ((PORTH >> 8) & 0x1)
+#define PWM_SOFT1_PIN                  GPIO_PIN_RH8
+
+/*** Macros for PWM_SOFT2 pin ***/
+#define PWM_SOFT2_Set()               (LATHSET = (1<<9))
+#define PWM_SOFT2_Clear()             (LATHCLR = (1<<9))
+#define PWM_SOFT2_Toggle()            (LATHINV= (1<<9))
+#define PWM_SOFT2_OutputEnable()      (TRISHCLR = (1<<9))
+#define PWM_SOFT2_InputEnable()       (TRISHSET = (1<<9))
+#define PWM_SOFT2_Get()               ((PORTH >> 9) & 0x1)
+#define PWM_SOFT2_PIN                  GPIO_PIN_RH9
+
+/*** Macros for PWM_SOFT3 pin ***/
+#define PWM_SOFT3_Set()               (LATHSET = (1<<10))
+#define PWM_SOFT3_Clear()             (LATHCLR = (1<<10))
+#define PWM_SOFT3_Toggle()            (LATHINV= (1<<10))
+#define PWM_SOFT3_OutputEnable()      (TRISHCLR = (1<<10))
+#define PWM_SOFT3_InputEnable()       (TRISHSET = (1<<10))
+#define PWM_SOFT3_Get()               ((PORTH >> 10) & 0x1)
+#define PWM_SOFT3_PIN                  GPIO_PIN_RH10
+
+/*** Macros for PWM_SOFT4 pin ***/
+#define PWM_SOFT4_Set()               (LATHSET = (1<<11))
+#define PWM_SOFT4_Clear()             (LATHCLR = (1<<11))
+#define PWM_SOFT4_Toggle()            (LATHINV= (1<<11))
+#define PWM_SOFT4_OutputEnable()      (TRISHCLR = (1<<11))
+#define PWM_SOFT4_InputEnable()       (TRISHSET = (1<<11))
+#define PWM_SOFT4_Get()               ((PORTH >> 11) & 0x1)
+#define PWM_SOFT4_PIN                  GPIO_PIN_RH11
+
 /*** Macros for SCL1_TEST pin ***/
 #define SCL1_TEST_Get()               ((PORTA >> 14) & 0x1)
 #define SCL1_TEST_PIN                  GPIO_PIN_RA14
@@ -447,6 +483,15 @@
 /*** Macros for SDI4_MISO_TEST pin ***/
 #define SDI4_MISO_TEST_Get()               ((PORTD >> 11) & 0x1)
 #define SDI4_MISO_TEST_PIN                  GPIO_PIN_RD11
+
+/*** Macros for PWM_SOFT5 pin ***/
+#define PWM_SOFT5_Set()               (LATHSET = (1<<12))
+#define PWM_SOFT5_Clear()             (LATHCLR = (1<<12))
+#define PWM_SOFT5_Toggle()            (LATHINV= (1<<12))
+#define PWM_SOFT5_OutputEnable()      (TRISHCLR = (1<<12))
+#define PWM_SOFT5_InputEnable()       (TRISHSET = (1<<12))
+#define PWM_SOFT5_Get()               ((PORTH >> 12) & 0x1)
+#define PWM_SOFT5_PIN                  GPIO_PIN_RH12
 
 /*** Macros for SDO4_MOSI_TEST pin ***/
 #define SDO4_MOSI_TEST_Get()               ((PORTD >> 0) & 0x1)
