@@ -41,6 +41,10 @@ extern "C" {
 
     // **** GLOBAL TYPEDEFS ****
 
+    typedef enum {
+        SOFT_PWM_PIN_NORMAL,
+        SOFT_PWM_PIN_INVERTED,
+    } soft_pwm_type_t;
     // **** END GLOBAL TYPEDEFS ****
     // -------------------------------------------------------------------------
     // **** GLOBAL VARIABLES ****
@@ -49,13 +53,14 @@ extern "C" {
     // -------------------------------------------------------------------------
     // **** GLOBAL FUNCTION PROTOTYPES ****
     void SoftPWM_Init(void);
-    bool SoftPWM_PinAdd(GPIO_PIN pin);
+    bool SoftPWM_PinAdd(GPIO_PIN pin, soft_pwm_type_t type);
     void SoftPWM_PinEnable(GPIO_PIN pin);
     void SoftPWM_PinDisable(GPIO_PIN pin);
+    void SoftPWM_PinEnableAll(void);
     void SoftPWM_PinDisableAll(void);
     void SoftPWM_PinSetDuty(GPIO_PIN pin, uint8_t duty);
     bool SoftPWM_SetFrequency(uint16_t freqHz);
-    uint16_t SoftPWM_GetFrequency(void);
+    uint32_t SoftPWM_GetFrequency(void);
     // **** END GLOBAL FUNCTION PROTOTYPES ****
     // -------------------------------------------------------------------------
 #ifdef	__cplusplus

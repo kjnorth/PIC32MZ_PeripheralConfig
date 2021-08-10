@@ -51,11 +51,26 @@ int main(int argc, char** argv) {
     TMR2_Start(); // for OCMP4
     NVData_Init();
     SoftPWM_Init();
-    SoftPWM_PinAdd(PWM_SOFT1_PIN);
-    SoftPWM_PinAdd(PWM_SOFT2_PIN);
-    SoftPWM_PinAdd(PWM_SOFT3_PIN);
-    SoftPWM_PinAdd(PWM_SOFT4_PIN);
-    SoftPWM_PinAdd(PWM_SOFT5_PIN);
+    SoftPWM_PinAdd(PWM_SOFT1_PIN, SOFT_PWM_PIN_NORMAL);
+    SoftPWM_PinAdd(PWM_SOFT2_PIN, SOFT_PWM_PIN_NORMAL);
+    SoftPWM_PinAdd(PWM_SOFT3_PIN, SOFT_PWM_PIN_NORMAL);
+    SoftPWM_PinAdd(PWM_SOFT4_PIN, SOFT_PWM_PIN_INVERTED);
+    SoftPWM_PinAdd(PWM_SOFT5_PIN, SOFT_PWM_PIN_INVERTED);
+
+    SoftPWM_PinSetDuty(PWM_SOFT1_PIN, 13);
+    SoftPWM_PinEnable(PWM_SOFT1_PIN);
+
+    SoftPWM_PinSetDuty(PWM_SOFT2_PIN, 1);
+    SoftPWM_PinEnable(PWM_SOFT2_PIN);
+
+    SoftPWM_PinSetDuty(PWM_SOFT3_PIN, 60);
+    SoftPWM_PinEnable(PWM_SOFT3_PIN);
+    //
+    //                SoftPWM_PinSetDuty(PWM_SOFT4_PIN, 80);
+    //                SoftPWM_PinEnable(PWM_SOFT4_PIN);
+    //
+    //                SoftPWM_PinSetDuty(PWM_SOFT5_PIN, 100);
+    //                SoftPWM_PinEnable(PWM_SOFT5_PIN);
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
 
@@ -63,25 +78,12 @@ int main(int argc, char** argv) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
 
-        if (IsValueWithinRange(curDutyCycle, preDutyCycle, 2, 2)) {
+        if (!IsValueWithinRange(curDutyCycle, preDutyCycle, 2, 2)) {
             preDutyCycle = curDutyCycle;
             if (curDutyCycle <= 5) {
                 SoftPWM_PinDisableAll();
             } else if (curDutyCycle > 5 && curDutyCycle <= 35) {
-                SoftPWM_PinSetDuty(PWM_SOFT1_PIN, 20);
-                SoftPWM_PinEnable(PWM_SOFT1_PIN);
 
-//                SoftPWM_PinSetDuty(PWM_SOFT2_PIN, 40);
-//                SoftPWM_PinEnable(PWM_SOFT2_PIN);
-//
-//                SoftPWM_PinSetDuty(PWM_SOFT3_PIN, 60);
-//                SoftPWM_PinEnable(PWM_SOFT3_PIN);
-//
-//                SoftPWM_PinSetDuty(PWM_SOFT4_PIN, 80);
-//                SoftPWM_PinEnable(PWM_SOFT4_PIN);
-//
-//                SoftPWM_PinSetDuty(PWM_SOFT5_PIN, 100);
-//                SoftPWM_PinEnable(PWM_SOFT5_PIN);
             } else if (curDutyCycle > 35 && curDutyCycle <= 60) {
                 SoftPWM_SetFrequency(50);
             } else if (curDutyCycle > 60 && curDutyCycle <= 80) {
@@ -90,7 +92,7 @@ int main(int argc, char** argv) {
                 SoftPWM_SetFrequency(10000);
             }
         }
-        
+
         /* test of the nvm module
         static bool isTested = false;
         if (curDutyCycle > 90 && !isTested) {
@@ -143,5 +145,5 @@ void SPIComm(uint8_t sendData) {
 }
 
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop) {
-  return (valueToCheck >= (valueForCompare - leftSlop)) && (valueToCheck <= (valueForCompare + rightSlop));
+    return (valueToCheck >= (valueForCompare - leftSlop)) && (valueToCheck <= (valueForCompare + rightSlop));
 }
