@@ -52,44 +52,32 @@ int main(int argc, char** argv) {
     NVData_Init();
     SoftPWM_Init();
     SoftPWM_PinAdd(PWM_SOFT1_PIN, SOFT_PWM_PIN_NORMAL);
-    SoftPWM_PinAdd(PWM_SOFT2_PIN, SOFT_PWM_PIN_NORMAL);
-    SoftPWM_PinAdd(PWM_SOFT3_PIN, SOFT_PWM_PIN_NORMAL);
-    SoftPWM_PinAdd(PWM_SOFT4_PIN, SOFT_PWM_PIN_INVERTED);
-    SoftPWM_PinAdd(PWM_SOFT5_PIN, SOFT_PWM_PIN_INVERTED);
+    SoftPWM_PinAdd(PWM_SOFT2_PIN, SOFT_PWM_PIN_INVERTED);
 
-    SoftPWM_PinSetDuty(PWM_SOFT1_PIN, 13);
+    SoftPWM_PinSetDuty(PWM_SOFT1_PIN, 25);
     SoftPWM_PinEnable(PWM_SOFT1_PIN);
 
-    SoftPWM_PinSetDuty(PWM_SOFT2_PIN, 1);
+    SoftPWM_PinSetDuty(PWM_SOFT2_PIN, 50);
     SoftPWM_PinEnable(PWM_SOFT2_PIN);
-
-    SoftPWM_PinSetDuty(PWM_SOFT3_PIN, 60);
-    SoftPWM_PinEnable(PWM_SOFT3_PIN);
-    //
-    //                SoftPWM_PinSetDuty(PWM_SOFT4_PIN, 80);
-    //                SoftPWM_PinEnable(PWM_SOFT4_PIN);
-    //
-    //                SoftPWM_PinSetDuty(PWM_SOFT5_PIN, 100);
-    //                SoftPWM_PinEnable(PWM_SOFT5_PIN);
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
 
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
-
+        
         if (!IsValueWithinRange(curDutyCycle, preDutyCycle, 2, 2)) {
             preDutyCycle = curDutyCycle;
             if (curDutyCycle <= 5) {
-                SoftPWM_PinDisableAll();
+                SoftPWM_SetFrequency(1000);
             } else if (curDutyCycle > 5 && curDutyCycle <= 35) {
-
+                SoftPWM_SetFrequency(2000);
             } else if (curDutyCycle > 35 && curDutyCycle <= 60) {
-                SoftPWM_SetFrequency(50);
+                SoftPWM_SetFrequency(3000);
             } else if (curDutyCycle > 60 && curDutyCycle <= 80) {
-                SoftPWM_SetFrequency(3750);
+                SoftPWM_SetFrequency(4000);
             } else if (curDutyCycle > 80 && curDutyCycle <= 100) {
-                SoftPWM_SetFrequency(10000);
+                SoftPWM_SetFrequency(5000);
             }
         }
 

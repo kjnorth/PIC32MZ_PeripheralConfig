@@ -30,7 +30,7 @@ uart_comm_t preState = commState;
 void setup() {
   Serial.begin(115200);
   PIC32_SERIAL.begin(115200);
-  LogInfo("SPI Slave project begins\n");
+  LogInfo("Arduino print receiver begins\n");
 
   uint8_t sreg = SREG; // save the current status register (SREG) configuration
   // init the SPI
