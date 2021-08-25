@@ -52,6 +52,7 @@ typedef struct {
 static encoder_t Enc1;
 static encoder_t Enc2;
 static encoder_desc_t EncDescList[TOTAL_ENCODERS] = {
+    {(encoder_t*) NULL, (GPIO_PIN) NULL, (GPIO_PIN) NULL}, // system_encoder_t values start at 1, so populate 0 index of this list with NULL
     {&Enc1, ENC1_A_TEST_PIN, ENC1_B_TEST_PIN},
     {&Enc2, ENC2_A_TEST_PIN, ENC2_B_TEST_PIN}
 };
@@ -64,7 +65,7 @@ static void EncCallback(GPIO_PIN pin, uintptr_t context);
 
 void Encoders_Init(void) {
     uint8_t i;
-    for (i = 0; i < TOTAL_ENCODERS; i++) {
+    for (i = ENC1; i < TOTAL_ENCODERS; i++) {
         encoder_t* enc = EncDescList[i].enc;
         enc->aPin = EncDescList[i].aPinToSet;
         enc->bPin = EncDescList[i].bPinToSet;

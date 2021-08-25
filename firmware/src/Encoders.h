@@ -28,7 +28,7 @@ extern "C" {
 #endif
 
     typedef enum {
-        ENC1,
+        ENC1 = 1,
         ENC2,
         TOTAL_ENCODERS, // only two encoders are wired up now. move down as more encoders are added
         ENC3,
