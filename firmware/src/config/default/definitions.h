@@ -51,6 +51,7 @@
 #include "peripheral/coretimer/plib_coretimer.h"
 #include "peripheral/adchs/plib_adchs.h"
 #include "peripheral/tmr/plib_tmr4.h"
+#include "peripheral/uart/plib_uart1.h"
 #include "peripheral/spi/spi_master/plib_spi4_master.h"
 #include "peripheral/tmr/plib_tmr2.h"
 #include "peripheral/tmr/plib_tmr3.h"

@@ -45,6 +45,7 @@
             <logicalFolder name="f3" displayName="uart" projectFiles="true">
               <itemPath>../src/config/default/peripheral/uart/plib_uart_common.h</itemPath>
               <itemPath>../src/config/default/peripheral/uart/plib_uart5.h</itemPath>
+              <itemPath>../src/config/default/peripheral/uart/plib_uart1.h</itemPath>
             </logicalFolder>
           </logicalFolder>
           <itemPath>../src/config/default/device.h</itemPath>
@@ -59,6 +60,8 @@
       <itemPath>../src/Utils.h</itemPath>
       <itemPath>../src/NVData.h</itemPath>
       <itemPath>../src/SoftPWM.h</itemPath>
+      <itemPath>../src/IMU_HWT901B.h</itemPath>
+      <itemPath>../src/UART_Comon.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -108,6 +111,7 @@
             </logicalFolder>
             <logicalFolder name="f3" displayName="uart" projectFiles="true">
               <itemPath>../src/config/default/peripheral/uart/plib_uart5.c</itemPath>
+              <itemPath>../src/config/default/peripheral/uart/plib_uart1.c</itemPath>
             </logicalFolder>
           </logicalFolder>
           <logicalFolder name="f2" displayName="stdio" projectFiles="true">
@@ -124,6 +128,7 @@
       <itemPath>../src/Encoders.c</itemPath>
       <itemPath>../src/NVData.c</itemPath>
       <itemPath>../src/SoftPWM.c</itemPath>
+      <itemPath>../src/IMU_HWT901B.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -142,6 +147,7 @@
         <itemPath>../src/config/default/default.mhc/tmr2.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/tmr3.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/tmr4.yml</itemPath>
+        <itemPath>../src/config/default/default.mhc/uart1.yml</itemPath>
         <itemPath>../src/config/default/default.mhc/uart5.yml</itemPath>
       </logicalFolder>
       <itemPath>Makefile</itemPath>

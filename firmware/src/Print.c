@@ -25,6 +25,7 @@
 
 #include "Print.h"
 #include "Time.h"
+#include "UART_Comon.h"
 
 #include "peripheral/gpio/plib_gpio.h"
 #include "peripheral/uart/plib_uart5.h"
@@ -52,17 +53,11 @@ typedef enum {
     VERIFY_ACK_START_SEND_MSG,
     VERIFY_ACK_MSG,
 } print_state_t;
-static print_state_t printState;
-
-typedef struct {
-    volatile bool isRxErrorDetected;
-    volatile bool isTxFinished;
-    volatile bool isRxFinished;
-} uart_flags_t;
-static uart_flags_t Uart5;
 // **** END MODULE TYPEDEFS ****
 
 // **** MODULE GLOBAL VARIABLES ****
+static print_state_t PrintState;
+static uart_interrupt_flags_t Uart5;
 UART_ERROR Errors;
 // **** END MODULE GLOBAL VARIABLES ****
 
@@ -75,7 +70,7 @@ static void UART5_ReadCallback(uintptr_t context);
 void Print_Init(void) {
     Queue.index = 0;
     Queue.size = 0;
-    printState = SEND_START;
+    PrintState = SEND_START;
     Uart5.isRxErrorDetected = false;
     Uart5.isTxFinished = false;
     Uart5.isRxFinished = true; // init to true so Print_Task kicks off the first message that is enqueued
@@ -144,27 +139,27 @@ void Print_Task(void) {
         // do something to indicate that an error occurred and start over
         LED1_Set();
         UART5_ReadAbort();
-        printState = SEND_START;
+        PrintState = SEND_START;
     } else if (Uart5.isRxFinished) {
         /* send start byte or msg or illuminate LED if ack not received correctly */
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
         const static uint8_t startByte = PRINT_START; // static so memory is not erased before UART can write it
 
-        switch (printState) {
+        switch (PrintState) {
             case SEND_START:
                 if (!Print_IsQueueEmpty()) {
                     // queue is non-empty, initiate the send of a message
                     nextWrite = (char*) &startByte;
                     sizeNextWrite = sizeof (uint8_t);
-                    printState = VERIFY_ACK_START_SEND_MSG;
+                    PrintState = VERIFY_ACK_START_SEND_MSG;
                 }
                 break;
             case VERIFY_ACK_START_SEND_MSG:
                 if (response == PRINT_ACK) {
                     response = 0;
                     if (Print_DequeueMsg(&nextWrite, &sizeNextWrite)) {
-                        printState = VERIFY_ACK_MSG;
+                        PrintState = VERIFY_ACK_MSG;
                     }
                 } else {
                     // error occurred
@@ -174,7 +169,7 @@ void Print_Task(void) {
             case VERIFY_ACK_MSG:
                 if (response == PRINT_ACK) {
                     response = 0;
-                    printState = SEND_START;
+                    PrintState = SEND_START;
                 } else {
                     // error occurred
                     LED1_Set();
@@ -196,7 +191,7 @@ void Print_Task(void) {
         if (curTime - readStartTime > PRINT_READ_TIMEOUT_MS) {
             // receiving unit is not responding, abort the read and start over, note that the most recent dequeued message may be lost
             UART5_ReadAbort();
-            printState = SEND_START;
+            PrintState = SEND_START;
             Uart5.isRxFinished = true; // set to true to send start byte again
         }
     }

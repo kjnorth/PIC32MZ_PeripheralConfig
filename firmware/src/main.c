@@ -12,6 +12,7 @@
 #include <string.h>
 
 #include "Encoders.h"
+#include "IMU_HWT901B.h"
 #include "NVData.h"
 #include "Print.h"
 #include "SoftPWM.h"
@@ -96,6 +97,7 @@ int main(int argc, char** argv) {
                     Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());
         }
         Print_Task();
+        IMU_SampleTask();
     }
 
     return (EXIT_SUCCESS);
@@ -117,11 +119,12 @@ void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context) {
  * 
  * @param curDutyCycle - value from 0 to 100
  * @return OCxRS - OCMPx secondary register value for the desired duty cycle
+ * @NOTE this function can be turned into a look up table to use less processing power
  */
 uint16_t PWM_CompareValueGet(uint8_t curDutyCycle) {
     uint16_t OCxRS = 0;
     if (curDutyCycle <= PWM_MAX_DUTY_CYCLE) {
-        // OCxRS = [curDutyCycle * (PR + 1)] : 0 <= curDutyCycle <= 1
+        // OCxRS = [duty * (PR + 1)] : 0 <= duty <= 1
         OCxRS = (uint16_t) (((float) curDutyCycle / (float) PWM_MAX_DUTY_CYCLE) * (TMR2_PeriodGet() + 1));
     }
     return OCxRS;
