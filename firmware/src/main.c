@@ -96,7 +96,7 @@ int main(int argc, char** argv) {
             pt = ct;
 //            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u, freq %u\n",
 //                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());
-//            Print_EnqueueMsg("roll %0.2f, pitch %0.2f\n", IMU_RollGet(), IMU_PitchGet());
+            Print_EnqueueMsg("roll %0.2f, pitch %0.2f\n", IMU_RollGet(), IMU_PitchGet());
         }
         Print_Task();
         IMU_SampleTask();

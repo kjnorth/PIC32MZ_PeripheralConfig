@@ -82,19 +82,7 @@ void IMU_Init(void) {
 
 void IMU_Config(void /*reg to config?*/);
 
-#include "Print.h"
-#include "Time.h"
-#include "peripheral/gpio/plib_gpio.h"
 void IMU_SampleTask(void) {
-    unsigned long ct = Time_GetMs();
-    static unsigned long pt = 0;
-    static uint16_t count = 0;
-
-    if (ct - pt > 500) {
-        pt = ct;
-//        Print_EnqueueMsg("rx finished count %u, is read busy %d\n", count, UART1_ReadIsBusy());
-        Print_EnqueueMsg("times received valid data %u\n", count);
-    }
     if (Uart1.IsRxErrorDetected) {
         Uart1.IsRxErrorDetected = false;
         Uart1.IsRxFinished = false;
@@ -102,7 +90,6 @@ void IMU_SampleTask(void) {
         UART1_Read(RxBuffer, sizeof (uint8_t));
         ImuState = WAIT_START;
     } else if (Uart1.IsRxFinished) {
-//        count++;
         Uart1.IsRxFinished = false;
         
         switch (ImuState) {
@@ -111,7 +98,6 @@ void IMU_SampleTask(void) {
                 if (RxBuffer[0] == DATA_START_BYTE) {
                     UART1_Read(RxBuffer, DATA_LENGTH);
                     ImuState = WAIT_DATA;
-//                    Print_EnqueueMsg("start byte received\n");
                 } else {
                     UART1_Read(RxBuffer, sizeof (uint8_t));
                 }
@@ -125,19 +111,14 @@ void IMU_SampleTask(void) {
                     checksum += RxBuffer[i];
                 }
                 if (checksum == RxBuffer[PACKET_SUM_IDX]) {
-                    count++;
                     // data is valid
                     IMU_ParseData();
-//                    Print_EnqueueMsg("valid data received %u times\n", i);
-                } else {
-                    Print_EnqueueMsg("sum not valid %u\n", checksum);
                 }
                 UART1_Read(RxBuffer, sizeof (uint8_t));
                 ImuState = WAIT_START;
                 break;
             }
         }
-        
     } else if (Uart1.IsTxFinished) {
         Uart1.IsTxFinished = false;
     }
@@ -156,24 +137,24 @@ void IMU_ParseData(void) {
     switch (id) {
         case DATA_TIME: break;
         case DATA_ACC:
-            AccData[0] = ((RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]) / 32768.0 * 16.0;
-            AccData[1] = ((RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]) / 32768.0 * 16.0;
-            AccData[2] = ((RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]) / 32768.0 * 16.0;
+            AccData[0] = (float)((int16_t)(RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]) / 32768.0 * 16.0;
+            AccData[1] = (float)((int16_t)(RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]) / 32768.0 * 16.0;
+            AccData[2] = (float)((int16_t)(RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]) / 32768.0 * 16.0;
             break;
         case DATA_GYRO:
-            GyroData[0] = ((RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]) / 32768.0 * 2000.0;
-            GyroData[1] = ((RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]) / 32768.0 * 2000.0;
-            GyroData[2] = ((RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]) / 32768.0 * 2000.0;
+            GyroData[0] = (float)((int16_t)(RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]) / 32768.0 * 2000.0;
+            GyroData[1] = (float)((int16_t)(RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]) / 32768.0 * 2000.0;
+            GyroData[2] = (float)((int16_t)(RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]) / 32768.0 * 2000.0;
             break;
         case DATA_ANGLE:
-            AngleData[0] = ((RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]) / 32768.0 * 180.0;
-            AngleData[1] = ((RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]) / 32768.0 * 180.0;
-            AngleData[2] = ((RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]) / 32768.0 * 180.0;
+            AngleData[0] = (float)((int16_t)(RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]) / 32768.0 * 180.0;
+            AngleData[1] = (float)((int16_t)(RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]) / 32768.0 * 180.0;
+            AngleData[2] = (float)((int16_t)(RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]) / 32768.0 * 180.0;
             break;
         case DATA_MAG:
-            MagData[0] = ((RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]);
-            MagData[1] = ((RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]);
-            MagData[2] = ((RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]);
+            MagData[0] = (float)((int16_t)(RxBuffer[PACKET_X_HIGH_IDX] << 8) | RxBuffer[PACKET_X_LOW_IDX]);
+            MagData[1] = (float)((int16_t)(RxBuffer[PACKET_Y_HIGH_IDX] << 8) | RxBuffer[PACKET_Y_LOW_IDX]);
+            MagData[2] = (float)((int16_t)(RxBuffer[PACKET_Z_HIGH_IDX] << 8) | RxBuffer[PACKET_Z_LOW_IDX]);
             break;
         case DATA_BARO: break;
         case DATA_QUAT: break;
