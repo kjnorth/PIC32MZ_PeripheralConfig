@@ -43,7 +43,10 @@ extern "C" {
     // **** GLOBAL FUNCTION PROTOTYPES ****
     void IMU_Init(void);
     void IMU_Config(void /*reg to config?*/);
-    void IMU_SampleTask(void); // all continuously in main loop
+    void IMU_SampleTask(void); // call continuously in main loop
+    
+    float IMU_RollGet(void);
+    float IMU_PitchGet(void);
     // **** END GLOBAL FUNCTION PROTOTYPES ****
     // -------------------------------------------------------------------------
 #ifdef	__cplusplus

@@ -4,7 +4,7 @@
 
 
 project: PIC32MZ_PeripheralConfig
-creation_date: 2021-09-11T11:03:45.830-07:00[America/Los_Angeles]    # ISO 8601 format: https://www.w3.org/TR/NOTE-datetime
+creation_date: 2021-09-16T16:03:24.894-07:00[America/Los_Angeles]    # ISO 8601 format: https://www.w3.org/TR/NOTE-datetime
 operating_system: Windows 10
 mhc_mode: IDE            # [IDE|Standalone|Headless]
 mhc_version: v3.7.2

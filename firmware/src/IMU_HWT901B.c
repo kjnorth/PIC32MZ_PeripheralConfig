@@ -59,18 +59,22 @@ static float AngleData[3]; // in deg
 static imu_state_t ImuState;
 static uart_interrupt_flags_t Uart1;
 static uint8_t RxBuffer[DATA_LENGTH];
-UART_ERROR Errors;
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
 void IMU_ParseData(void);
+static void UART1_WriteCallback(uintptr_t context);
+static void UART1_ReadCallback(uintptr_t context);
 // **** MODULE FUNCTION PROTOTYPES ****
 // -----------------------------------------------------------------------------
 
 void IMU_Init(void) {
-    Uart1.isRxErrorDetected = false;
-    Uart1.isRxFinished = false;
-    Uart1.isTxFinished = false;
+    Uart1.IsRxErrorDetected = false;
+    Uart1.IsRxFinished = false;
+    Uart1.IsTxFinished = false;
+    Uart1.Errors = UART_ERROR_NONE;
+    UART1_WriteCallbackRegister(UART1_WriteCallback, (uintptr_t) NULL);
+    UART1_ReadCallbackRegister(UART1_ReadCallback, (uintptr_t) NULL);
     
     UART1_Read(RxBuffer, sizeof (uint8_t));
     ImuState = WAIT_START;
@@ -78,14 +82,28 @@ void IMU_Init(void) {
 
 void IMU_Config(void /*reg to config?*/);
 
+#include "Print.h"
+#include "Time.h"
+#include "peripheral/gpio/plib_gpio.h"
 void IMU_SampleTask(void) {
-    if (Uart1.isRxErrorDetected) {
-        Uart1.isRxErrorDetected = false;
+    unsigned long ct = Time_GetMs();
+    static unsigned long pt = 0;
+    static uint16_t count = 0;
+
+    if (ct - pt > 500) {
+        pt = ct;
+//        Print_EnqueueMsg("rx finished count %u, is read busy %d\n", count, UART1_ReadIsBusy());
+        Print_EnqueueMsg("times received valid data %u\n", count);
+    }
+    if (Uart1.IsRxErrorDetected) {
+        Uart1.IsRxErrorDetected = false;
+        Uart1.IsRxFinished = false;
         UART1_ReadAbort();
         UART1_Read(RxBuffer, sizeof (uint8_t));
         ImuState = WAIT_START;
-    } else if (Uart1.isRxFinished) {
-        Uart1.isRxFinished = false;
+    } else if (Uart1.IsRxFinished) {
+//        count++;
+        Uart1.IsRxFinished = false;
         
         switch (ImuState) {
             case WAIT_START:
@@ -93,6 +111,7 @@ void IMU_SampleTask(void) {
                 if (RxBuffer[0] == DATA_START_BYTE) {
                     UART1_Read(RxBuffer, DATA_LENGTH);
                     ImuState = WAIT_DATA;
+//                    Print_EnqueueMsg("start byte received\n");
                 } else {
                     UART1_Read(RxBuffer, sizeof (uint8_t));
                 }
@@ -100,14 +119,18 @@ void IMU_SampleTask(void) {
             case WAIT_DATA: {
                 // enter state when DATA_LENGTH of bytes are read
                 // validate checksum
-                uint16_t checksum = DATA_START_BYTE;
+                uint8_t checksum = DATA_START_BYTE;
                 uint8_t i;
                 for (i = 0; i < (DATA_LENGTH - 1); i++) {
                     checksum += RxBuffer[i];
                 }
                 if (checksum == RxBuffer[PACKET_SUM_IDX]) {
+                    count++;
                     // data is valid
                     IMU_ParseData();
+//                    Print_EnqueueMsg("valid data received %u times\n", i);
+                } else {
+                    Print_EnqueueMsg("sum not valid %u\n", checksum);
                 }
                 UART1_Read(RxBuffer, sizeof (uint8_t));
                 ImuState = WAIT_START;
@@ -115,17 +138,19 @@ void IMU_SampleTask(void) {
             }
         }
         
-    } else if (Uart1.isTxFinished) {
-        Uart1.isTxFinished = false;
+    } else if (Uart1.IsTxFinished) {
+        Uart1.IsTxFinished = false;
     }
 }
 
-/*
- static uint16_t AccData[3];
-static uint16_t GyroData[3];
-static uint16_t MagData[3];
-static uint16_t AngleData[3];
- */
+float IMU_RollGet(void) {
+    return AngleData[0];
+}
+
+float IMU_PitchGet(void) {
+    return AngleData[1];
+}
+
 void IMU_ParseData(void) {
     data_id_byte_t id = (data_id_byte_t) RxBuffer[PACKET_ID_IDX];
     switch (id) {
@@ -152,5 +177,25 @@ void IMU_ParseData(void) {
             break;
         case DATA_BARO: break;
         case DATA_QUAT: break;
+    }
+}
+
+/**
+ * function called when UART1 finishes transmitting data
+ */
+void UART1_WriteCallback(uintptr_t context) {
+    Uart1.IsTxFinished = true;
+}
+
+/**
+ * function called when UART1 finishes reading data
+ */
+void UART1_ReadCallback(uintptr_t context) {
+    Uart1.Errors = UART1_ErrorGet();
+    if (Uart1.Errors != UART_ERROR_NONE) {
+        /* ErrorGet clears errors, set error flag to notify console */
+        Uart1.IsRxErrorDetected = true;
+    } else {
+        Uart1.IsRxFinished = true;
     }
 }

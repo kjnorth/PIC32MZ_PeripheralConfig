@@ -14,6 +14,8 @@
 // **** GLOBAL INCLUDE DIRECTIVES ****
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "config/default/peripheral/uart/plib_uart_common.h"
 // **** END GLOBAL INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
@@ -26,9 +28,10 @@ extern "C" {
 
     // **** GLOBAL TYPEDEFS ****
     typedef struct {
-        volatile bool isRxErrorDetected;
-        volatile bool isTxFinished;
-        volatile bool isRxFinished;
+        volatile bool IsRxErrorDetected;
+        volatile bool IsTxFinished;
+        volatile bool IsRxFinished;
+        volatile UART_ERROR Errors;
     } uart_interrupt_flags_t;
     // **** END GLOBAL TYPEDEFS ****
     // -------------------------------------------------------------------------

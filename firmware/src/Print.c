@@ -58,7 +58,6 @@ typedef enum {
 // **** MODULE GLOBAL VARIABLES ****
 static print_state_t PrintState;
 static uart_interrupt_flags_t Uart5;
-UART_ERROR Errors;
 // **** END MODULE GLOBAL VARIABLES ****
 
 // **** MODULE FUNCTION PROTOTYPES ****
@@ -71,11 +70,12 @@ void Print_Init(void) {
     Queue.index = 0;
     Queue.size = 0;
     PrintState = SEND_START;
-    Uart5.isRxErrorDetected = false;
-    Uart5.isTxFinished = false;
-    Uart5.isRxFinished = true; // init to true so Print_Task kicks off the first message that is enqueued
-    UART5_WriteCallbackRegister(UART5_WriteCallback, 0);
-    UART5_ReadCallbackRegister(UART5_ReadCallback, 0);
+    Uart5.IsRxErrorDetected = false;
+    Uart5.IsTxFinished = false;
+    Uart5.IsRxFinished = true; // init to true so Print_Task kicks off the first message that is enqueued
+    Uart5.Errors = UART_ERROR_NONE;
+    UART5_WriteCallbackRegister(UART5_WriteCallback, (uintptr_t) NULL);
+    UART5_ReadCallbackRegister(UART5_ReadCallback, (uintptr_t) NULL);
     Time_Init();
 }
 
@@ -134,13 +134,13 @@ void Print_Task(void) {
     static uint8_t response = 0;
     static uint32_t readStartTime = 0;
 
-    if (Uart5.isRxErrorDetected) {
-        Uart5.isRxErrorDetected = false;
+    if (Uart5.IsRxErrorDetected) {
+        Uart5.IsRxErrorDetected = false;
         // do something to indicate that an error occurred and start over
         LED1_Set();
         UART5_ReadAbort();
         PrintState = SEND_START;
-    } else if (Uart5.isRxFinished) {
+    } else if (Uart5.IsRxFinished) {
         /* send start byte or msg or illuminate LED if ack not received correctly */
         char* nextWrite = NULL;
         uint8_t sizeNextWrite = 0;
@@ -179,11 +179,11 @@ void Print_Task(void) {
 
         if (nextWrite != NULL) {
             UART5_Write(nextWrite, sizeNextWrite);
-            Uart5.isRxFinished = false; // only set isRxFinished to false once data is sent
+            Uart5.IsRxFinished = false; // only set IsRxFinished to false once data is sent
         }
-    } else if (Uart5.isTxFinished) {
+    } else if (Uart5.IsTxFinished) {
         /* initiate read of ack */
-        Uart5.isTxFinished = false;
+        Uart5.IsTxFinished = false;
         UART5_Read(&response, sizeof (uint8_t));
         readStartTime = Time_GetMs();
     } else if (UART5_ReadIsBusy()) {
@@ -192,7 +192,7 @@ void Print_Task(void) {
             // receiving unit is not responding, abort the read and start over, note that the most recent dequeued message may be lost
             UART5_ReadAbort();
             PrintState = SEND_START;
-            Uart5.isRxFinished = true; // set to true to send start byte again
+            Uart5.IsRxFinished = true; // set to true to send start byte again
         }
     }
 }
@@ -201,18 +201,18 @@ void Print_Task(void) {
  * function called when UART5 finishes transmitting data
  */
 void UART5_WriteCallback(uintptr_t context) {
-    Uart5.isTxFinished = true;
+    Uart5.IsTxFinished = true;
 }
 
 /**
  * function called when UART5 finishes reading data
  */
 void UART5_ReadCallback(uintptr_t context) {
-    Errors = UART5_ErrorGet();
-    if (Errors != UART_ERROR_NONE) {
+    Uart5.Errors = UART5_ErrorGet();
+    if (Uart5.Errors != UART_ERROR_NONE) {
         /* ErrorGet clears errors, set error flag to notify console */
-        Uart5.isRxErrorDetected = true;
+        Uart5.IsRxErrorDetected = true;
     } else {
-        Uart5.isRxFinished = true;
+        Uart5.IsRxFinished = true;
     }
 }

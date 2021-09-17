@@ -5,12 +5,32 @@ children:
 - type: Symbols
   children:
   - type: Integer
+    attributes: {id: BAUD_RATE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '115200'}
+  - type: Integer
     attributes: {id: BRG_VALUE}
     children:
     - type: Values
       children:
       - type: Dynamic
         attributes: {id: uart1, value: '216'}
+  - type: Boolean
+    attributes: {id: UART_AUTOMATIC_ADDR_DETECTION_ENABLE}
+    children:
+    - type: Attributes
+      children:
+      - type: Boolean
+        attributes: {id: readOnly}
+        children:
+        - {type: Value, value: 'false'}
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: uart1, value: 'false'}
   - type: KeyValueSet
     attributes: {id: UART_BRGH}
     children:
@@ -18,6 +38,37 @@ children:
       children:
       - type: Dynamic
         attributes: {id: uart1, value: '0'}
+  - type: Comment
+    attributes: {id: UART_BRGH_MODE_COMMENT}
+    children:
+    - type: Attributes
+      children:
+      - type: String
+        attributes: {id: text}
+        children:
+        - {type: Value, value: '*** High Speed mode 4x baud clock enabled (BRGH =
+            1) ***'}
+  - type: Integer
+    attributes: {id: UART_CLOCK_FREQ}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: uart1, value: '100000000'}
+  - type: KeyValueSet
+    attributes: {id: UART_PDBIT_SELECT}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '3'}
+  - type: KeyValueSet
+    attributes: {id: UART_STOPBIT_SELECT}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '1'}
   - type: Hex
     attributes: {id: UMODE_VALUE}
     children:
@@ -25,5 +76,12 @@ children:
       children:
       - type: Dynamic
         attributes: {id: uart1, value: '8'}
+  - type: String
+    attributes: {id: USART_DATA_BITS}
+    children:
+    - type: Values
+      children:
+      - type: Dynamic
+        attributes: {id: uart1, value: DRV_USART_DATA_8_BIT}
 - type: ElementPosition
   attributes: {x: '320', y: '103', id: uart1}

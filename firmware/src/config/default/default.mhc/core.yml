@@ -1097,27 +1097,6 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
-    attributes: {id: BSP_PIN_35_FUNCTION_NAME}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: ENC2_0}
-  - type: String
-    attributes: {id: BSP_PIN_35_FUNCTION_TYPE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: GPIO}
-  - type: String
-    attributes: {id: BSP_PIN_35_MODE}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: DIGITAL}
-  - type: String
     attributes: {id: BSP_PIN_36_FUNCTION_NAME}
     children:
     - type: Values
@@ -1320,20 +1299,6 @@ children:
       children:
       - type: User
         attributes: {value: DIGITAL}
-  - type: String
-    attributes: {id: BSP_PIN_48_FUNCTION_NAME}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: ENC5_B}
-  - type: String
-    attributes: {id: BSP_PIN_49_FUNCTION_NAME}
-    children:
-    - type: Values
-      children:
-      - type: User
-        attributes: {value: ENC5_0}
   - type: String
     attributes: {id: BSP_PIN_4_FUNCTION_NAME}
     children:
@@ -1944,12 +1909,40 @@ children:
       - type: User
         attributes: {value: DIGITAL}
   - type: String
+    attributes: {id: BSP_PIN_90_FUNCTION_NAME}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: U1RX_FROM_IMU}
+  - type: String
+    attributes: {id: BSP_PIN_90_FUNCTION_TYPE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: U1RX}
+  - type: String
     attributes: {id: BSP_PIN_90_MODE}
     children:
     - type: Values
       children:
       - type: User
         attributes: {value: DIGITAL}
+  - type: String
+    attributes: {id: BSP_PIN_91_FUNCTION_NAME}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: U1TX_TO_IMU}
+  - type: String
+    attributes: {id: BSP_PIN_91_FUNCTION_TYPE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: U1TX}
   - type: String
     attributes: {id: BSP_PIN_91_MODE}
     children:
@@ -3605,7 +3598,7 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: core, value: '61943'}
+        attributes: {id: core, value: '61941'}
   - type: Hex
     attributes: {id: SYS_PORT_C_ANSEL}
     children:
@@ -3756,6 +3749,19 @@ children:
       children:
       - type: User
         attributes: {value: SDI4}
+  - type: Combo
+    attributes: {id: SYS_PORT_PPS_INPUT_FUNCTION_4}
+    children:
+    - type: Attributes
+      children:
+      - type: Boolean
+        attributes: {id: visible}
+        children:
+        - {type: Value, value: 'true'}
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: U1RX}
   - type: KeyValueSet
     attributes: {id: SYS_PORT_PPS_INPUT_PIN_0}
     children:
@@ -3808,6 +3814,19 @@ children:
       children:
       - type: User
         attributes: {value: '38'}
+  - type: KeyValueSet
+    attributes: {id: SYS_PORT_PPS_INPUT_PIN_4}
+    children:
+    - type: Attributes
+      children:
+      - type: Boolean
+        attributes: {id: visible}
+        children:
+        - {type: Value, value: 'true'}
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '30'}
   - type: KeyValueSet
     attributes: {id: SYS_PORT_PPS_OUTPUT_FUNCTION_0}
     children:
@@ -3886,6 +3905,19 @@ children:
       children:
       - type: User
         attributes: {value: '28'}
+  - type: KeyValueSet
+    attributes: {id: SYS_PORT_PPS_OUTPUT_FUNCTION_14}
+    children:
+    - type: Attributes
+      children:
+      - type: Boolean
+        attributes: {id: visible}
+        children:
+        - {type: Value, value: 'true'}
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '26'}
   - type: KeyValueSet
     attributes: {id: SYS_PORT_PPS_OUTPUT_FUNCTION_2}
     children:
@@ -4068,6 +4100,19 @@ children:
       children:
       - type: User
         attributes: {value: RPD0}
+  - type: Combo
+    attributes: {id: SYS_PORT_PPS_OUTPUT_PIN_14}
+    children:
+    - type: Attributes
+      children:
+      - type: Boolean
+        attributes: {id: visible}
+        children:
+        - {type: Value, value: 'true'}
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: RPF5}
   - type: Combo
     attributes: {id: SYS_PORT_PPS_OUTPUT_PIN_2}
     children:
@@ -4635,6 +4680,13 @@ children:
       - type: User
         attributes: {value: 'true'}
   - type: Boolean
+    attributes: {id: USE_PPS_INPUT_4}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: 'true'}
+  - type: Boolean
     attributes: {id: USE_PPS_OUTPUT_0}
     children:
     - type: Values
@@ -4671,6 +4723,13 @@ children:
         attributes: {value: 'true'}
   - type: Boolean
     attributes: {id: USE_PPS_OUTPUT_13}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: 'true'}
+  - type: Boolean
+    attributes: {id: USE_PPS_OUTPUT_14}
     children:
     - type: Values
       children:

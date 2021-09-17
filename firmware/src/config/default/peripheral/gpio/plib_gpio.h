@@ -224,15 +224,6 @@
 #define ENC2_B_Get()               ((PORTB >> 2) & 0x1)
 #define ENC2_B_PIN                  GPIO_PIN_RB2
 
-/*** Macros for ENC2_0 pin ***/
-#define ENC2_0_Set()               (LATBSET = (1<<1))
-#define ENC2_0_Clear()             (LATBCLR = (1<<1))
-#define ENC2_0_Toggle()            (LATBINV= (1<<1))
-#define ENC2_0_OutputEnable()      (TRISBCLR = (1<<1))
-#define ENC2_0_InputEnable()       (TRISBSET = (1<<1))
-#define ENC2_0_Get()               ((PORTB >> 1) & 0x1)
-#define ENC2_0_PIN                  GPIO_PIN_RB1
-
 /*** Macros for ENC3_A pin ***/
 #define ENC3_A_Set()               (LATBSET = (1<<0))
 #define ENC3_A_Clear()             (LATBCLR = (1<<0))
@@ -463,6 +454,14 @@
 #define PWM_SOFT4_InputEnable()       (TRISHSET = (1<<11))
 #define PWM_SOFT4_Get()               ((PORTH >> 11) & 0x1)
 #define PWM_SOFT4_PIN                  GPIO_PIN_RH11
+
+/*** Macros for U1RX_FROM_IMU pin ***/
+#define U1RX_FROM_IMU_Get()               ((PORTF >> 4) & 0x1)
+#define U1RX_FROM_IMU_PIN                  GPIO_PIN_RF4
+
+/*** Macros for U1TX_TO_IMU pin ***/
+#define U1TX_TO_IMU_Get()               ((PORTF >> 5) & 0x1)
+#define U1TX_TO_IMU_PIN                  GPIO_PIN_RF5
 
 /*** Macros for SCL1_TEST pin ***/
 #define SCL1_TEST_Get()               ((PORTA >> 14) & 0x1)
