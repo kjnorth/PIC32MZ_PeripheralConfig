@@ -43,7 +43,6 @@ extern "C" {
     // -------------------------------------------------------------------------
     // **** GLOBAL FUNCTION PROTOTYPES ****
     void IMU_Init(void);
-    void IMU_Config(void /*reg to config?*/);
     void IMU_SampleTask(void); // call continuously in main loop
     
     float IMU_RollGet(void);

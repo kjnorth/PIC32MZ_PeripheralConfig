@@ -47,9 +47,6 @@ int main(int argc, char** argv) {
     Encoders_Init();
     Print_Init();
     IMU_Init();
-    // **** TEST IMU CONFIG ****
-    IMU_Config();
-    // **** END TEST IMU CONFIG ****
     ADCHS_CallbackRegister(ADCHS_CH3, ADCHS_Callback, (uintptr_t) NULL);
     TMR3_Start(); // for ADC    
     OCMP4_Enable();
@@ -71,7 +68,7 @@ int main(int argc, char** argv) {
 
         unsigned long ct = Time_GetMs();
         static unsigned long pt = 0;
-        if (ct - pt >= 1000) {
+        if (ct - pt >= 250) {
             pt = ct;
 //            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u, freq %u\n",
 //                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());

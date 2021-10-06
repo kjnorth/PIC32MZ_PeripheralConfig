@@ -75,21 +75,19 @@ static uint8_t RxBuffer[DATA_LENGTH];
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
+void IMU_Config(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexDataH);
+void IMU_Calibrate_AccelGyro(void);
 void IMU_ParseData(void);
 void IMU_WriteUnlockPacket(void);
 void IMU_WriteConfigPacket(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexDataH);
 void IMU_WriteSavePacket(void);
-static void Delay250ms(void);
+static void DelayXms(uint16_t x_ms);
 static void UART1_WriteCallback(uintptr_t context);
 static void UART1_ReadCallback(uintptr_t context);
 // **** MODULE FUNCTION PROTOTYPES ****
 // -----------------------------------------------------------------------------
 
 void IMU_Init(void) {
-    // Head1/2 are the same for all config cmds
-    ConfigPacket.Head1 = 0xFF;
-    ConfigPacket.Head2 = 0xAA;
-    
     Uart1.IsRxErrorDetected = false;
     Uart1.IsRxFinished = false;
     Uart1.IsTxFinished = false;
@@ -97,52 +95,57 @@ void IMU_Init(void) {
     UART1_WriteCallbackRegister(UART1_WriteCallback, (uintptr_t) NULL);
     UART1_ReadCallbackRegister(UART1_ReadCallback, (uintptr_t) NULL);
     
+    // Init config packet - Head1/2 are the same for all config cmds
+    ConfigPacket.Head1 = 0xFF;
+    ConfigPacket.Head2 = 0xAA;
+    // Apply IMU config settings
+    IMU_Config(0x03, 0x07, 0x00); // set 20Hz output data rate
+    
     UART1_Read(RxBuffer, sizeof (uint8_t));
     ImuState = WAIT_START;
 }
 
 /*
  * What settings do I want configurable from the PIC?
- * calibrate for Gyro and Accel
- * install dir? NOPE need to negate angles based on install dir
- * gyro auto calibration
- * return rate
- * set x, y, z bias? seems like alg only cares about 1g on z-axis
+ * calibrate for Gyro and Accel - done
+ * gyro auto calibration - what does it do??
+ * return rate - done
+ * 
+ * INSTALL DIRECTION NOTES
  */
-#include "Print.h"
 
-void temp_printCmd(void) {
-    uint8_t i;
-    for (i = 0; i < CONFIG_PACKET_LENGTH; i++) {
-        Print_EnqueueMsg("txBuf[%u]: 0x%02X ", i, TxBuffer[i]);
-    }
-    Print_EnqueueMsg("\n");
-}
-
-void IMU_Config(void /*reg to config?*/) {
-    // cancel current read
-    UART1_ReadAbort();
-    
+/**
+ * This function should only be called from IMU_Init after the UART registers
+ * have been initialized
+ * @param address - address of register to be configured
+ * @param dataL - config packet low data byte from datasheet
+ * @param dataH - config packet high data byte from datasheet
+ */
+void IMU_Config(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexDataH) {
     // 1. unlock device
     IMU_WriteUnlockPacket();
     // 2. apply the setting
-    // TEST RETURN DATA RATE NOW
-    IMU_WriteConfigPacket(0x03, 0x09, 0x00);
+    IMU_WriteConfigPacket(hexAddress, hexDataL, hexDataH);
     // 3. save
     IMU_WriteSavePacket();
-    // restart communications
-    Uart1.IsRxErrorDetected = false;
-    Uart1.IsRxFinished = false;
-    Uart1.IsTxFinished = false;
-    Uart1.Errors = UART_ERROR_NONE;
-    
-    // restart communications
-    UART1_Read(RxBuffer, sizeof (uint8_t));
-    ImuState = WAIT_START;
 }
 
-void IMU_Config_Accel(void) {
-    // config accel must delay 3-5s while accel config is completing, so this func is special
+/**
+ * Only calibrate accel and gyro when IMU is upright (white/blue label facing
+ * up) on perfectly level surface with no external disturbances such as walking
+ * or jumping nearby.
+ * @note calibrate accel/gyro must delay 3-5s while calibration is completing,
+ * so this function is unique from IMU_Config above
+ */
+void IMU_Calibrate_AccelGyro(void) {
+    // 1. unlock device
+    IMU_WriteUnlockPacket();
+    // 2. apply the setting
+    IMU_WriteConfigPacket(0x01, 0x01, 0x00);
+    // 3. delay 3-5s
+    DelayXms(5000);
+    // 4. save
+    IMU_WriteSavePacket(); 
 }
 
 void IMU_SampleTask(void) {
@@ -188,12 +191,33 @@ void IMU_SampleTask(void) {
     }
 }
 
+#define PL_IMU
+
 float IMU_RollGet(void) {
-    return AngleData[0];
+#if defined(PL_IMU)
+    float returnVal = 0.0;
+    float rollData = AngleData[0];
+    if (rollData < 0.0) {
+        returnVal = rollData + 180.0;
+    } else {
+        returnVal = rollData - 180.0;
+    }
+    return returnVal;
+#elif defined(BR_IMU)
+    return 0.0;
+#else
+    return 0.0;
+#endif
 }
 
 float IMU_PitchGet(void) {
-    return AngleData[1];
+#if defined(PL_IMU)
+    return -AngleData[1];
+#elif defined(BR_IMU)
+    return 0.0;
+#else
+    return 0.0;
+#endif
 }
 
 // **** MODULE FUNCTIONS ****
@@ -232,7 +256,7 @@ void IMU_WriteUnlockPacket(void) {
     ConfigPacket.DataH = 0xB5;
     memcpy(TxBuffer, (uint8_t*) &ConfigPacket, CONFIG_PACKET_LENGTH);
     UART1_Write(TxBuffer, CONFIG_PACKET_LENGTH);
-    Delay250ms();
+    DelayXms(250);
 }
 
 void IMU_WriteConfigPacket(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexDataH) {
@@ -241,7 +265,7 @@ void IMU_WriteConfigPacket(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexData
     ConfigPacket.DataH = hexDataH;
     memcpy(TxBuffer, (uint8_t*) &ConfigPacket, CONFIG_PACKET_LENGTH);
     UART1_Write(TxBuffer, CONFIG_PACKET_LENGTH);
-    Delay250ms();
+    DelayXms(250);
 }
 
 void IMU_WriteSavePacket(void) {
@@ -250,13 +274,13 @@ void IMU_WriteSavePacket(void) {
     ConfigPacket.DataH = 0x00;
     memcpy(TxBuffer, (uint8_t*) &ConfigPacket, CONFIG_PACKET_LENGTH);
     UART1_Write(TxBuffer, CONFIG_PACKET_LENGTH);
-    Delay250ms();
+    DelayXms(250);
 }
 
-static void Delay250ms(void) {
+static void DelayXms(uint16_t x_ms) {
     uint32_t curTime = Time_GetMs();
     uint32_t preTime = curTime;
-    while (curTime - preTime <= 250) {
+    while (curTime - preTime <= x_ms) {
         curTime = Time_GetMs();
     }
 }
