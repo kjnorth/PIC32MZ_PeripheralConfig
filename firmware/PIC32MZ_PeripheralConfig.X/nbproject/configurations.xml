@@ -61,7 +61,7 @@
       <itemPath>../src/NVData.h</itemPath>
       <itemPath>../src/SoftPWM.h</itemPath>
       <itemPath>../src/IMU_HWT901B.h</itemPath>
-      <itemPath>../src/UART_Comon.h</itemPath>
+      <itemPath>../src/UART_Common.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

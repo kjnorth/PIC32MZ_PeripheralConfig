@@ -8,8 +8,8 @@
  * Created on September 10, 2021, 2:26 PM
  */
 
-#ifndef UART_COMON_H
-#define	UART_COMON_H
+#ifndef UART_COMMON_H
+#define	UART_COMMON_H
 
 // **** GLOBAL INCLUDE DIRECTIVES ****
 #include <stdbool.h>
@@ -47,5 +47,5 @@ extern "C" {
 }
 #endif
 
-#endif	/* UART_COMON_H */
+#endif	/* UART_COMMON_H */
 

@@ -10,13 +10,16 @@
 // **** MODULE INCLUDE DIRECTIVES ****
 #include "IMU_HWT901B.h"
 
+#include "peripheral/evic/plib_evic.h"
 #include "peripheral/uart/plib_uart1.h"
-#include "UART_Comon.h"
+#include "Time.h"
+#include "UART_Common.h"
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
 #define DATA_START_BYTE (0x55u)
 #define DATA_LENGTH (10u) // bytes
+#define CONFIG_PACKET_LENGTH (5u) // bytes
 
 // indices in RxBuffer
 #define PACKET_ID_IDX (0u)
@@ -46,6 +49,14 @@ typedef enum {
     WAIT_START,
     WAIT_DATA,
 } imu_state_t;
+
+typedef struct {
+    uint8_t Head1;
+    uint8_t Head2;
+    uint8_t Address;
+    uint8_t DataL;
+    uint8_t DataH;
+} imu_config_packet_t;
 // **** END MODULE TYPEDEFS ****
 // -----------------------------------------------------------------------------
 // **** MODULE GLOBAL VARIABLES ****
@@ -57,18 +68,28 @@ static float AngleData[3]; // in deg
 
 // uart
 static imu_state_t ImuState;
+static imu_config_packet_t ConfigPacket;
 static uart_interrupt_flags_t Uart1;
+static uint8_t TxBuffer[CONFIG_PACKET_LENGTH]; // only used for sending config cmds
 static uint8_t RxBuffer[DATA_LENGTH];
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
 void IMU_ParseData(void);
+void IMU_WriteUnlockPacket(void);
+void IMU_WriteConfigPacket(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexDataH);
+void IMU_WriteSavePacket(void);
+static void Delay250ms(void);
 static void UART1_WriteCallback(uintptr_t context);
 static void UART1_ReadCallback(uintptr_t context);
 // **** MODULE FUNCTION PROTOTYPES ****
 // -----------------------------------------------------------------------------
 
 void IMU_Init(void) {
+    // Head1/2 are the same for all config cmds
+    ConfigPacket.Head1 = 0xFF;
+    ConfigPacket.Head2 = 0xAA;
+    
     Uart1.IsRxErrorDetected = false;
     Uart1.IsRxFinished = false;
     Uart1.IsTxFinished = false;
@@ -80,7 +101,49 @@ void IMU_Init(void) {
     ImuState = WAIT_START;
 }
 
-void IMU_Config(void /*reg to config?*/);
+/*
+ * What settings do I want configurable from the PIC?
+ * calibrate for Gyro and Accel
+ * install dir? NOPE need to negate angles based on install dir
+ * gyro auto calibration
+ * return rate
+ * set x, y, z bias? seems like alg only cares about 1g on z-axis
+ */
+#include "Print.h"
+
+void temp_printCmd(void) {
+    uint8_t i;
+    for (i = 0; i < CONFIG_PACKET_LENGTH; i++) {
+        Print_EnqueueMsg("txBuf[%u]: 0x%02X ", i, TxBuffer[i]);
+    }
+    Print_EnqueueMsg("\n");
+}
+
+void IMU_Config(void /*reg to config?*/) {
+    // cancel current read
+    UART1_ReadAbort();
+    
+    // 1. unlock device
+    IMU_WriteUnlockPacket();
+    // 2. apply the setting
+    // TEST RETURN DATA RATE NOW
+    IMU_WriteConfigPacket(0x03, 0x09, 0x00);
+    // 3. save
+    IMU_WriteSavePacket();
+    // restart communications
+    Uart1.IsRxErrorDetected = false;
+    Uart1.IsRxFinished = false;
+    Uart1.IsTxFinished = false;
+    Uart1.Errors = UART_ERROR_NONE;
+    
+    // restart communications
+    UART1_Read(RxBuffer, sizeof (uint8_t));
+    ImuState = WAIT_START;
+}
+
+void IMU_Config_Accel(void) {
+    // config accel must delay 3-5s while accel config is completing, so this func is special
+}
 
 void IMU_SampleTask(void) {
     if (Uart1.IsRxErrorDetected) {
@@ -104,6 +167,7 @@ void IMU_SampleTask(void) {
                 break;
             case WAIT_DATA: {
                 // enter state when DATA_LENGTH of bytes are read
+                numUpdates++;
                 // validate checksum
                 uint8_t checksum = DATA_START_BYTE;
                 uint8_t i;
@@ -132,6 +196,7 @@ float IMU_PitchGet(void) {
     return AngleData[1];
 }
 
+// **** MODULE FUNCTIONS ****
 void IMU_ParseData(void) {
     data_id_byte_t id = (data_id_byte_t) RxBuffer[PACKET_ID_IDX];
     switch (id) {
@@ -161,6 +226,41 @@ void IMU_ParseData(void) {
     }
 }
 
+void IMU_WriteUnlockPacket(void) {
+    ConfigPacket.Address = 0x69;
+    ConfigPacket.DataL = 0x88;
+    ConfigPacket.DataH = 0xB5;
+    memcpy(TxBuffer, (uint8_t*) &ConfigPacket, CONFIG_PACKET_LENGTH);
+    UART1_Write(TxBuffer, CONFIG_PACKET_LENGTH);
+    Delay250ms();
+}
+
+void IMU_WriteConfigPacket(uint8_t hexAddress, uint8_t hexDataL, uint8_t hexDataH) {
+    ConfigPacket.Address = hexAddress;
+    ConfigPacket.DataL = hexDataL;
+    ConfigPacket.DataH = hexDataH;
+    memcpy(TxBuffer, (uint8_t*) &ConfigPacket, CONFIG_PACKET_LENGTH);
+    UART1_Write(TxBuffer, CONFIG_PACKET_LENGTH);
+    Delay250ms();
+}
+
+void IMU_WriteSavePacket(void) {
+    ConfigPacket.Address = 0x00;
+    ConfigPacket.DataL = 0x00;
+    ConfigPacket.DataH = 0x00;
+    memcpy(TxBuffer, (uint8_t*) &ConfigPacket, CONFIG_PACKET_LENGTH);
+    UART1_Write(TxBuffer, CONFIG_PACKET_LENGTH);
+    Delay250ms();
+}
+
+static void Delay250ms(void) {
+    uint32_t curTime = Time_GetMs();
+    uint32_t preTime = curTime;
+    while (curTime - preTime <= 250) {
+        curTime = Time_GetMs();
+    }
+}
+
 /**
  * function called when UART1 finishes transmitting data
  */
@@ -180,3 +280,4 @@ void UART1_ReadCallback(uintptr_t context) {
         Uart1.IsRxFinished = true;
     }
 }
+// **** END MODULE FUNCTIONS ****

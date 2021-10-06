@@ -47,41 +47,20 @@ int main(int argc, char** argv) {
     Encoders_Init();
     Print_Init();
     IMU_Init();
+    // **** TEST IMU CONFIG ****
+    IMU_Config();
+    // **** END TEST IMU CONFIG ****
     ADCHS_CallbackRegister(ADCHS_CH3, ADCHS_Callback, (uintptr_t) NULL);
     TMR3_Start(); // for ADC    
     OCMP4_Enable();
     TMR2_Start(); // for OCMP4
     NVData_Init();
-    SoftPWM_Init();
-    SoftPWM_PinAdd(PWM_SOFT1_PIN, SOFT_PWM_PIN_NORMAL);
-    SoftPWM_PinAdd(PWM_SOFT2_PIN, SOFT_PWM_PIN_INVERTED);
-
-    SoftPWM_PinSetDuty(PWM_SOFT1_PIN, 25);
-    SoftPWM_PinEnable(PWM_SOFT1_PIN);
-
-    SoftPWM_PinSetDuty(PWM_SOFT2_PIN, 50);
-    SoftPWM_PinEnable(PWM_SOFT2_PIN);
 
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
 
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
-        
-        if (!IsValueWithinRange(curDutyCycle, preDutyCycle, 2, 2)) {
-            preDutyCycle = curDutyCycle;
-            if (curDutyCycle <= 5) {
-                SoftPWM_SetFrequency(1000);
-            } else if (curDutyCycle > 5 && curDutyCycle <= 35) {
-                SoftPWM_SetFrequency(2000);
-            } else if (curDutyCycle > 35 && curDutyCycle <= 60) {
-                SoftPWM_SetFrequency(3000);
-            } else if (curDutyCycle > 60 && curDutyCycle <= 80) {
-                SoftPWM_SetFrequency(4000);
-            } else if (curDutyCycle > 80 && curDutyCycle <= 100) {
-                SoftPWM_SetFrequency(5000);
-            }
-        }
 
         /* test of the nvm module
         static bool isTested = false;
@@ -96,7 +75,8 @@ int main(int argc, char** argv) {
             pt = ct;
 //            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u, freq %u\n",
 //                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());
-            Print_EnqueueMsg("roll %0.2f, pitch %0.2f\n", IMU_RollGet(), IMU_PitchGet());
+            Print_EnqueueMsg("roll %0.2f, pitch %0.2f, numUpdates %u\n", IMU_RollGet(), IMU_PitchGet(), numUpdates);
+            numUpdates = 0;
         }
         Print_Task();
         IMU_SampleTask();
