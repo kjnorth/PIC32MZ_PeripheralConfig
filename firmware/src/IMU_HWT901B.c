@@ -32,9 +32,21 @@
 #define PACKET_Z_HIGH_IDX (6u)
 
 #define PACKET_SUM_IDX (9u)
+
+#define IMU_BW_CONFIG_ADDR (0x1Fu) // defined here because register description is missing in the datasheet
 // **** END MODULE MACROS ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
+typedef enum { // defined here because register description is missing in the datasheet
+    BW_256Hz = 0x00,
+    BW_188Hz,
+    BW_98Hz,
+    BW_42Hz,
+    BW_20Hz,
+    BW_10Hz,
+    BW_5Hz
+} imu_bw_dataL_config_val_t; // note that the dataH byte for BW config is always 0x00
+
 typedef enum {
     DATA_TIME = 0x50,
     DATA_ACC,
@@ -98,21 +110,17 @@ void IMU_Init(void) {
     // Init config packet - Head1/2 are the same for all config cmds
     ConfigPacket.Head1 = 0xFF;
     ConfigPacket.Head2 = 0xAA;
-    // Apply IMU config settings
+    
+    // Apply IMU config settings, refer to datasheet for config registers and data values
+    IMU_Config(IMU_BW_CONFIG_ADDR, BW_42Hz, 0x00); // set 42Hz bandwidth
     IMU_Config(0x03, 0x07, 0x00); // set 20Hz output data rate
+    IMU_Config(0x02, 0x08, 0x00); // config to only push angle data
+    IMU_Config(0x24, 0x01, 0x00); // config to use 6-axis Kalman filter (no magnetometer data necessary)
+    // Set gyro auto calibration if it's useful????? Waiting for response from manufacturer
     
     UART1_Read(RxBuffer, sizeof (uint8_t));
     ImuState = WAIT_START;
 }
-
-/*
- * What settings do I want configurable from the PIC?
- * calibrate for Gyro and Accel - done
- * gyro auto calibration - what does it do??
- * return rate - done
- * 
- * INSTALL DIRECTION NOTES
- */
 
 /**
  * This function should only be called from IMU_Init after the UART registers
@@ -170,7 +178,6 @@ void IMU_SampleTask(void) {
                 break;
             case WAIT_DATA: {
                 // enter state when DATA_LENGTH of bytes are read
-                numUpdates++;
                 // validate checksum
                 uint8_t checksum = DATA_START_BYTE;
                 uint8_t i;
@@ -191,36 +198,57 @@ void IMU_SampleTask(void) {
     }
 }
 
-#define PL_IMU
+/**
+ * IMU mounting orientation macros for PL or BR to convert returned angles
+ * into N.E.D. coordinates based on how the devices are physically mounted on
+ * the machine such that pitch up and roll right are positive 
+ */
+//#define PL_IMU
+#define BR_IMU
 
+/* TODO: where should offsets due to mounting inconsistencies be subtracted? 
+ * We could also mount, fully nest the PL, on a LEVEL surface and re-calibrate
+ * the accel's Z-axis. That may work just as well and require less data to be
+ * stored in NVM.
+ */
 float IMU_RollGet(void) {
-#if defined(PL_IMU)
     float returnVal = 0.0;
+#if defined(PL_IMU)
     float rollData = AngleData[0];
     if (rollData < 0.0) {
         returnVal = rollData + 180.0;
     } else {
         returnVal = rollData - 180.0;
     }
-    return returnVal;
 #elif defined(BR_IMU)
-    return 0.0;
+    returnVal = -AngleData[0];
 #else
-    return 0.0;
+    returnVal = AngleData[0];
 #endif
+    return returnVal;
 }
 
+/* TODO: where should offsets due to mounting inconsistencies be subtracted? 
+ * We could also mount, fully nest the PL, on a LEVEL surface and re-calibrate
+ * the accel's Z-axis. That may work just as well and require less data to be
+ * stored in NVM.
+ */
 float IMU_PitchGet(void) {
+    float returnVal = 0.0;
 #if defined(PL_IMU)
-    return -AngleData[1];
+    returnVal = -AngleData[1];
 #elif defined(BR_IMU)
-    return 0.0;
+    returnVal = AngleData[1];
 #else
-    return 0.0;
+    returnVal = AngleData[1];
 #endif
+    return returnVal;
 }
 
 // **** MODULE FUNCTIONS ****
+/**
+ * @note all scale factors are found in the HWT901B datasheet
+ */
 void IMU_ParseData(void) {
     data_id_byte_t id = (data_id_byte_t) RxBuffer[PACKET_ID_IDX];
     switch (id) {

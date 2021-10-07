@@ -26,7 +26,6 @@
 #ifdef	__cplusplus
 extern "C" {
 #endif
-    uint16_t numUpdates;
     // **** GLOBAL TYPEDEFS ****
     typedef struct {
         float Pitch;
