@@ -65,33 +65,30 @@ int main(int argc, char** argv) {
     NVData_Init();
 
     
-//  ax_packet rx_pkt;
-//  uint8_t tx_pkt[0x100];
+    //  ax_packet rx_pkt;
+    //  uint8_t tx_pkt[0x100];
 
-  ax_config config;
-  memset(&config, 0, sizeof(ax_config));
+    ax_config config;
+    memset(&config, 0, sizeof(ax_config));
 
-  config.clock_source = AX_CLOCK_SOURCE_TCXO;
-  config.f_xtal = 16369000;
+    config.clock_source = AX_CLOCK_SOURCE_CRYSTAL;
+    config.f_xtal = 0;
 
-  config.synthesiser.A.frequency = 434600000;
-  config.synthesiser.B.frequency = 434600000;
+    config.synthesiser.A.frequency = 815200000;
+    config.synthesiser.B.frequency = 815200000;
 
-  config.spi_transfer = mplab_spi_transfer;
+    config.spi_transfer = mplab_spi_transfer;
 
-  config.pkt_store_flags = AX_PKT_STORE_RSSI |
-    AX_PKT_STORE_RF_OFFSET;
+    config.pkt_store_flags = AX_PKT_STORE_RSSI |
+      AX_PKT_STORE_RF_OFFSET;
 
 
-  /* ------- init ------- */
-  ax_init(&config);
-  ax_default_params(&config, &gmsk_hdlc_fec_modulation);
-  ax_rx_on(&config, &gmsk_hdlc_fec_modulation);
-
+    /* ------- init ------- */
+    int initStatus = ax_init(&config);
+    ax_default_params(&config, &gmsk_hdlc_fec_modulation);
+    ax_rx_on(&config, &gmsk_hdlc_fec_modulation);
     
-    
-    
-    Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
+    Print_EnqueueMsg("Hello Arduino from the PIC32. RF init status %d\n", initStatus);
 
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
