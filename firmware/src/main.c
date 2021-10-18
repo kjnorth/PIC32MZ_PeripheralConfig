@@ -20,6 +20,11 @@
 
 #include "definitions.h"
 
+#include "ax/ax.h"
+#include "ax/ax_hw.h"
+#include "ax/ax_modes.h"
+#include "ax/ax_reg_values.h"
+
 #define SW_VERSION 0.1f
 
 #define ADC_VREF                (3.3f)
@@ -35,8 +40,14 @@ uint8_t preDutyCycle = 0;
 
 void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 uint16_t PWM_CompareValueGet(uint8_t curDutyCycle);
-void SPIComm(uint8_t sendData);
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop);
+
+static unsigned char dataToReceive[256];
+void mplab_spi_transfer(unsigned char* data, uint8_t length) {
+    SPI1_WriteRead(data, length, dataToReceive, length);
+    memcpy(data, dataToReceive, length);
+}
+
 
 /*
  * 
@@ -53,6 +64,33 @@ int main(int argc, char** argv) {
     TMR2_Start(); // for OCMP4
     NVData_Init();
 
+    
+//  ax_packet rx_pkt;
+//  uint8_t tx_pkt[0x100];
+
+  ax_config config;
+  memset(&config, 0, sizeof(ax_config));
+
+  config.clock_source = AX_CLOCK_SOURCE_TCXO;
+  config.f_xtal = 16369000;
+
+  config.synthesiser.A.frequency = 434600000;
+  config.synthesiser.B.frequency = 434600000;
+
+  config.spi_transfer = mplab_spi_transfer;
+
+  config.pkt_store_flags = AX_PKT_STORE_RSSI |
+    AX_PKT_STORE_RF_OFFSET;
+
+
+  /* ------- init ------- */
+  ax_init(&config);
+  ax_default_params(&config, &gmsk_hdlc_fec_modulation);
+  ax_rx_on(&config, &gmsk_hdlc_fec_modulation);
+
+    
+    
+    
     Print_EnqueueMsg("Hello Arduino from the new print module version %0.2f\n", SW_VERSION);
 
     while (1) {
