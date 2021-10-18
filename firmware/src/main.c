@@ -108,11 +108,6 @@ uint16_t PWM_CompareValueGet(uint8_t curDutyCycle) {
     return OCxRS;
 }
 
-void SPIComm(uint8_t sendData) {
-    uint8_t recData = 0;
-    SPI4_WriteRead(&sendData, 1, &recData, 1);
-}
-
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop) {
     return (valueToCheck >= (valueForCompare - leftSlop)) && (valueToCheck <= (valueForCompare + rightSlop));
 }

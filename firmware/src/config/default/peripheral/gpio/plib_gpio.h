@@ -372,15 +372,6 @@
 #define ENC7_0_Get()               ((PORTB >> 14) & 0x1)
 #define ENC7_0_PIN                  GPIO_PIN_RB14
 
-/*** Macros for ENC8_A pin ***/
-#define ENC8_A_Set()               (LATBSET = (1<<15))
-#define ENC8_A_Clear()             (LATBCLR = (1<<15))
-#define ENC8_A_Toggle()            (LATBINV= (1<<15))
-#define ENC8_A_OutputEnable()      (TRISBCLR = (1<<15))
-#define ENC8_A_InputEnable()       (TRISBSET = (1<<15))
-#define ENC8_A_Get()               ((PORTB >> 15) & 0x1)
-#define ENC8_A_PIN                  GPIO_PIN_RB15
-
 /*** Macros for ENC8_B pin ***/
 #define ENC8_B_Set()               (LATHSET = (1<<4))
 #define ENC8_B_Clear()             (LATHCLR = (1<<4))
@@ -403,9 +394,9 @@
 #define PLLC1_Get()               ((PORTH >> 6) & 0x1)
 #define PLLC1_PIN                  GPIO_PIN_RH6
 
-/*** Macros for PLLC2 pin ***/
-#define PLLC2_Get()               ((PORTD >> 14) & 0x1)
-#define PLLC2_PIN                  GPIO_PIN_RD14
+/*** Macros for U5RX_TEST pin ***/
+#define U5RX_TEST_Get()               ((PORTD >> 14) & 0x1)
+#define U5RX_TEST_PIN                  GPIO_PIN_RD14
 
 /*** Macros for PLLC3 pin ***/
 #define PLLC3_Get()               ((PORTD >> 15) & 0x1)
@@ -471,18 +462,6 @@
 #define SDA1_TEST_Get()               ((PORTA >> 15) & 0x1)
 #define SDA1_TEST_PIN                  GPIO_PIN_RA15
 
-/*** Macros for SS4_OUT_TEST pin ***/
-#define SS4_OUT_TEST_Get()               ((PORTD >> 9) & 0x1)
-#define SS4_OUT_TEST_PIN                  GPIO_PIN_RD9
-
-/*** Macros for SCK4_TEST pin ***/
-#define SCK4_TEST_Get()               ((PORTD >> 10) & 0x1)
-#define SCK4_TEST_PIN                  GPIO_PIN_RD10
-
-/*** Macros for SDI4_MISO_TEST pin ***/
-#define SDI4_MISO_TEST_Get()               ((PORTD >> 11) & 0x1)
-#define SDI4_MISO_TEST_PIN                  GPIO_PIN_RD11
-
 /*** Macros for PWM_SOFT5 pin ***/
 #define PWM_SOFT5_Set()               (LATHSET = (1<<12))
 #define PWM_SOFT5_Clear()             (LATHCLR = (1<<12))
@@ -492,10 +471,6 @@
 #define PWM_SOFT5_Get()               ((PORTH >> 12) & 0x1)
 #define PWM_SOFT5_PIN                  GPIO_PIN_RH12
 
-/*** Macros for SDO4_MOSI_TEST pin ***/
-#define SDO4_MOSI_TEST_Get()               ((PORTD >> 0) & 0x1)
-#define SDO4_MOSI_TEST_PIN                  GPIO_PIN_RD0
-
 /*** Macros for CAN1_RX pin ***/
 #define CAN1_RX_Get()               ((PORTC >> 13) & 0x1)
 #define CAN1_RX_PIN                  GPIO_PIN_RC13
@@ -503,15 +478,6 @@
 /*** Macros for CAN1_TX pin ***/
 #define CAN1_TX_Get()               ((PORTC >> 14) & 0x1)
 #define CAN1_TX_PIN                  GPIO_PIN_RC14
-
-/*** Macros for SOL5_EN pin ***/
-#define SOL5_EN_Set()               (LATDSET = (1<<1))
-#define SOL5_EN_Clear()             (LATDCLR = (1<<1))
-#define SOL5_EN_Toggle()            (LATDINV= (1<<1))
-#define SOL5_EN_OutputEnable()      (TRISDCLR = (1<<1))
-#define SOL5_EN_InputEnable()       (TRISDSET = (1<<1))
-#define SOL5_EN_Get()               ((PORTD >> 1) & 0x1)
-#define SOL5_EN_PIN                  GPIO_PIN_RD1
 
 /*** Macros for SOL5_EXT pin ***/
 #define SOL5_EXT_Set()               (LATDSET = (1<<2))
@@ -561,10 +527,6 @@
 /*** Macros for U5TX_TEST pin ***/
 #define U5TX_TEST_Get()               ((PORTF >> 0) & 0x1)
 #define U5TX_TEST_PIN                  GPIO_PIN_RF0
-
-/*** Macros for U5RX_TEST pin ***/
-#define U5RX_TEST_Get()               ((PORTF >> 1) & 0x1)
-#define U5RX_TEST_PIN                  GPIO_PIN_RF1
 
 /*** Macros for LS1 pin ***/
 #define LS1_Set()               (LATASET = (1<<7))
@@ -709,6 +671,14 @@ typedef enum
     GPIO_PORT_J = 8,
     GPIO_PORT_K = 9,
 } GPIO_PORT;
+
+typedef enum
+{
+    GPIO_INTERRUPT_ON_MISMATCH,
+    GPIO_INTERRUPT_ON_RISING_EDGE,
+    GPIO_INTERRUPT_ON_FALLING_EDGE,
+    GPIO_INTERRUPT_ON_BOTH_EDGES,
+}GPIO_INTERRUPT_STYLE;
 
 // *****************************************************************************
 /* GPIO Port Pins
@@ -951,15 +921,11 @@ static inline void GPIO_PinOutputEnable(GPIO_PIN pin)
     GPIO_PortOutputEnable((GPIO_PORT)(pin>>4), 0x1 << (pin & 0xF));
 }
 
-static inline void GPIO_PinInterruptEnable(GPIO_PIN pin)
-{
-    GPIO_PortInterruptEnable((GPIO_PORT)(pin>>4), 0x1 << (pin & 0xF));
-}
+#define GPIO_PinInterruptEnable(pin)       GPIO_PinIntEnable(pin, GPIO_INTERRUPT_ON_MISMATCH)
+#define GPIO_PinInterruptDisable(pin)      GPIO_PinIntDisable(pin)
 
-static inline void GPIO_PinInterruptDisable(GPIO_PIN pin)
-{
-    GPIO_PortInterruptDisable((GPIO_PORT)(pin>>4), 0x1 << (pin & 0xF));
-}
+void GPIO_PinIntEnable(GPIO_PIN pin, GPIO_INTERRUPT_STYLE style);
+void GPIO_PinIntDisable(GPIO_PIN pin);
 
 bool GPIO_PinInterruptCallbackRegister(
     GPIO_PIN pin,

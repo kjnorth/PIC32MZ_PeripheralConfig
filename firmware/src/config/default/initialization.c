@@ -167,7 +167,6 @@ void SYS_Initialize ( void* data )
 
   
     CLK_Initialize();
-    
     /* Configure Prefetch, Wait States and ECC */
     PRECONbits.PREFEN = 3;
     PRECONbits.PFMWS = 3;
@@ -184,11 +183,11 @@ void SYS_Initialize ( void* data )
 
 	UART1_Initialize();
 
-	SPI4_Initialize();
-
     TMR2_Initialize();
 
     TMR3_Initialize();
+
+	SPI1_Initialize();
 
     OCMP4_Initialize();
 

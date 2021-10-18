@@ -62,59 +62,54 @@ uint8_t portNumCb[10 + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, };
 */
 void GPIO_Initialize ( void )
 {
+
     /* PORTA Initialization */
     ANSELACLR = 0x623; /* Digital Mode Enable */
-
     /* PORTB Initialization */
     ANSELBCLR = 0xf1f5; /* Digital Mode Enable */
-
     /* PORTC Initialization */
     ANSELCCLR = 0x1e; /* Digital Mode Enable */
-
     /* PORTD Initialization */
-
+    ANSELDCLR = 0x4000; /* Digital Mode Enable */
     /* PORTE Initialization */
     ANSELECLR = 0x3e0; /* Digital Mode Enable */
-
     /* PORTF Initialization */
     ANSELFCLR = 0x3000; /* Digital Mode Enable */
-
     /* PORTG Initialization */
     ANSELGCLR = 0x83c0; /* Digital Mode Enable */
-
     /* PORTH Initialization */
     LATH = 0x0; /* Initial Latch Value */
     TRISHCLR = 0x1f04; /* Direction Control */
     ANSELHCLR = 0x31; /* Digital Mode Enable */
-
     /* PORTJ Initialization */
     ANSELJCLR = 0x300; /* Digital Mode Enable */
     CNPUJSET = 0x6000; /* Pull-Up Enable */
+
     /* Change Notice Enable */
     CNCONJSET = _CNCONJ_ON_MASK;
     PORTJ;
     IEC3SET = _IEC3_CNJIE_MASK;
-
     /* PORTK Initialization */
     CNPUKSET = 0x6; /* Pull-Up Enable */
+
     /* Change Notice Enable */
     CNCONKSET = _CNCONK_ON_MASK;
     PORTK;
     IEC3SET = _IEC3_CNKIE_MASK;
 
-
     /* Unlock system for PPS configuration */
     SYSKEY = 0x00000000;
     SYSKEY = 0xAA996655;
     SYSKEY = 0x556699AA;
+
     CFGCONbits.IOLOCK = 0;
 
     /* PPS Input Remapping */
     C1RXR = 7;
     C2RXR = 11;
-    U5RXR = 4;
-    SDI4R = 3;
+    U5RXR = 11;
     U1RXR = 2;
+    SDI1R = 3;
 
     /* PPS Output Remapping */
     RPE5R = 11;
@@ -129,12 +124,13 @@ void GPIO_Initialize ( void )
     RPC14R = 15;
     RPF3R = 15;
     RPF0R = 3;
-    RPD9R = 8;
-    RPD0R = 8;
     RPF5R = 1;
+    RPB15R = 5;
+    RPD11R = 5;
 
-    /* Lock back the system after PPS configuration */
+        /* Lock back the system after PPS configuration */
     CFGCONbits.IOLOCK = 1;
+
     SYSKEY = 0x00000000;
 
     uint32_t i;
@@ -329,6 +325,66 @@ void GPIO_PortInterruptDisable(GPIO_PORT port, uint32_t mask)
 
 // *****************************************************************************
 /* Function:
+    void GPIO_PinIntEnable(GPIO_PIN pin, GPIO_INTERRUPT_STYLE style)
+
+  Summary:
+    Enables IO interrupt of particular style on selected IO pins of a port.
+
+  Remarks:
+    See plib_gpio.h for more details.
+*/
+void GPIO_PinIntEnable(GPIO_PIN pin, GPIO_INTERRUPT_STYLE style)
+{
+    GPIO_PORT port;
+    uint32_t mask;
+
+    port = (GPIO_PORT)(pin>>4);
+    mask =  0x1 << (pin & 0xF);
+
+    if (style == GPIO_INTERRUPT_ON_MISMATCH)
+    {
+        *(volatile uint32_t *)(&CNENASET + (port * 0x40)) = mask;
+    }
+    else if (style == GPIO_INTERRUPT_ON_RISING_EDGE)
+    {
+        *(volatile uint32_t *)(&CNENASET + (port * 0x40)) = mask;
+        *(volatile uint32_t *)(&CNNEACLR + (port * 0x40)) = mask;
+    }
+    else if (style == GPIO_INTERRUPT_ON_FALLING_EDGE)
+    {
+        *(volatile uint32_t *)(&CNENACLR + (port * 0x40)) = mask;
+        *(volatile uint32_t *)(&CNNEASET + (port * 0x40)) = mask;
+    }
+    else if (style == GPIO_INTERRUPT_ON_BOTH_EDGES)
+    {
+        *(volatile uint32_t *)(&CNENASET + (port * 0x40)) = mask;
+        *(volatile uint32_t *)(&CNNEASET + (port * 0x40)) = mask;
+    }
+}
+
+// *****************************************************************************
+/* Function:
+    void GPIO_PinIntDisable(GPIO_PIN pin)
+
+  Summary:
+    Disables IO interrupt on selected IO pins of a port.
+
+  Remarks:
+    See plib_gpio.h for more details.
+*/
+void GPIO_PinIntDisable(GPIO_PIN pin)
+{
+    GPIO_PORT port;
+    uint32_t mask;
+    
+    port = (GPIO_PORT)(pin>>4);
+    mask =  0x1 << (pin & 0xF);
+
+    *(volatile uint32_t *)(&CNENACLR + (port * 0x40)) = mask;
+    *(volatile uint32_t *)(&CNNEACLR + (port * 0x40)) = mask;
+}
+// *****************************************************************************
+/* Function:
     bool GPIO_PinInterruptCallbackRegister(
         GPIO_PIN pin,
         const GPIO_PIN_CALLBACK callback,
@@ -381,6 +437,7 @@ bool GPIO_PinInterruptCallbackRegister(
   Remarks:
 	It is an internal function called from ISR, user should not call it directly.
 */
+    
 void CHANGE_NOTICE_J_InterruptHandler(void)
 {
     uint8_t i;
@@ -412,6 +469,7 @@ void CHANGE_NOTICE_J_InterruptHandler(void)
   Remarks:
 	It is an internal function called from ISR, user should not call it directly.
 */
+    
 void CHANGE_NOTICE_K_InterruptHandler(void)
 {
     uint8_t i;
