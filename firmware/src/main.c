@@ -42,12 +42,14 @@ void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 uint16_t PWM_CompareValueGet(uint8_t curDutyCycle);
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop);
 
+// AX5243 Test Code
+#define AX_RECEIVER
 static unsigned char dataToReceive[256];
-void mplab_spi_transfer(unsigned char* data, uint8_t length) {
+void masterhaul_spi_transfer(unsigned char* data, uint8_t length) {
     SPI1_WriteRead(data, length, dataToReceive, length);
     memcpy(data, dataToReceive, length);
 }
-
+// END AX5243 Test Code
 
 /*
  * 
@@ -64,29 +66,39 @@ int main(int argc, char** argv) {
     TMR2_Start(); // for OCMP4
     NVData_Init();
 
-    
-    //  ax_packet rx_pkt;
-    //  uint8_t tx_pkt[0x100];
-
     ax_config config;
     memset(&config, 0, sizeof(ax_config));
 
+    config.pwrmode = AX_PWRMODE_POWERDOWN;
     config.clock_source = AX_CLOCK_SOURCE_CRYSTAL;
     config.f_xtal = 0;
 
+    config.synthesiser.vco_type = AX_VCO_INTERNAL;
     config.synthesiser.A.frequency = 815200000;
     config.synthesiser.B.frequency = 815200000;
+    
+    config.load_capacitance = 0;
+    config.tcxo_enable = config.tcxo_disable = NULL;
+    config.transmit_path = AX_TRANSMIT_PATH_SE;
+    config.transmit_power_limit = 0.0f;
+    config.spi_transfer = masterhaul_spi_transfer;
 
-    config.spi_transfer = mplab_spi_transfer;
-
-    config.pkt_store_flags = AX_PKT_STORE_RSSI |
-      AX_PKT_STORE_RF_OFFSET;
-
+    config.pkt_store_flags = AX_PKT_STORE_RSSI | AX_PKT_STORE_RF_OFFSET;
+    config.pkt_accept_flags = 0;
+    config.wakeup_period_ms = 0;
+    config.wakeup_xo_early_ms = 0;
 
     /* ------- init ------- */
     int initStatus = ax_init(&config);
     ax_default_params(&config, &gmsk_hdlc_fec_modulation);
+    
+#ifdef AX_RECEIVER    
+    ax_packet rx_pkt;
     ax_rx_on(&config, &gmsk_hdlc_fec_modulation);
+#else
+    uint8_t tx_pkt[0x100];
+    ax_tx_on(&config, &gmsk_hdlc_fec_modulation);
+#endif
     
     Print_EnqueueMsg("Hello Arduino from the PIC32. RF init status %d\n", initStatus);
 
@@ -111,6 +123,15 @@ int main(int argc, char** argv) {
         }
         Print_Task();
         IMU_SampleTask();
+        
+#ifdef AX_RECEIVER
+        if (ax_rx_packet(&config, &rx_pkt)) {
+            Print_EnqueueMsg("rx!\n");
+        }
+#else
+        strcpy((char*) tx_pkt, "ughdffgiuhdfudshfdjshfdjshfsudhfdskjfdfd");
+        ax_tx_packet(&config, &gmsk_hdlc_fec_modulation, tx_pkt, 40);
+#endif        
     }
 
     return (EXIT_SUCCESS);
