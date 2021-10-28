@@ -31,7 +31,7 @@
 #include "peripheral/uart/plib_uart5.h"
 
 // **** MODULE DEFINES ****
-#define PRINT_MAX_MSGS (10u)
+#define PRINT_MAX_MSGS (25u)
 #define PRINT_MAX_STR_LEN (256u)
 #define PRINT_START (0xA5u)
 #define PRINT_ACK (0xF9u)

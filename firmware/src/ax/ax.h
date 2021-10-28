@@ -209,7 +209,7 @@ typedef struct ax_config {
 
   /* external clock */
   enum ax_clock_source_type clock_source; /* Crystal or TCXO */
-  uint32_t f_xtal;              /* external clock frequency (Hz) */
+  uint32_t f_xtal;              /* external clock frequency (Hz) */ // Kodiak - WRONG, value is used for calculations and must be set!
   uint16_t load_capacitance;    /* if crystal, load capacitance to be applied (pF) */
   uint32_t error_ppm;           /* max. error of clock source, ppm */
   uint8_t f_xtaldiv;            /* xtal division factor, set automatically */
@@ -294,5 +294,14 @@ void ax_set_tx_path(ax_config* config, enum ax_transmit_path path);
 
 /* init */
 int ax_init(ax_config* config);
+
+/* status */
+void ax_print_status(ax_config* config);
+
+/* MH rewritten functions */
+int ax_mh_tx_packet(ax_config* config, ax_modulation* mod,
+                uint8_t* packet, uint8_t length);
+int ax_mh_rx_packet(ax_config* config, ax_modulation* mod,
+                ax_packet* rx_pkt);
 
 #endif  /* AX_H */

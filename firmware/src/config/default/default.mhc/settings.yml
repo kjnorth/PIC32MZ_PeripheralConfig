@@ -1,7 +1,7 @@
 configName: default
 folderName: PIC32MZ_PeripheralConfig
 format_version: v1.0
-frameworkPath: ../../../../../Harmony3
+frameworkPath: C:\Users\Kodiak\Harmony3
 processor: PIC32MZ2048EFM144
 projectName: PIC32MZ_PeripheralConfig
 settings:

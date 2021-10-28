@@ -40,8 +40,10 @@
 #include "ax/ax_params.h"
 
 #include <stdio.h>
+#include "../Print.h"
+#define DEBUG
 #ifdef DEBUG
-#define debug_printf printf
+#define debug_printf Print_EnqueueMsg
 #else
 #define debug_printf(...)
 #endif
@@ -58,7 +60,7 @@ void ax_set_synthesiser_parameters(ax_config* config,
                                    ax_synthesiser* synth,
                                    enum ax_vco_type vco_type);
 
-pinfunc_t _pinfunc_sysclk	= 1;
+pinfunc_t _pinfunc_sysclk	= 0x04;
 pinfunc_t _pinfunc_dclk		= 1;
 pinfunc_t _pinfunc_data		= 1;
 pinfunc_t _pinfunc_antsel	= 1;
@@ -182,7 +184,7 @@ void ax_fifo_tx_data(ax_config* config, ax_modulation* mod,
   }
   ax_hw_write_fifo(config, data, (uint8_t)chunk_length);
   data += chunk_length;
-  ax_fifo_commit(config);       /* commit */
+//  ax_fifo_commit(config);       /* commit */
 
   /* write subsequent data */
   while (rem_length) {
@@ -205,7 +207,7 @@ void ax_fifo_tx_data(ax_config* config, ax_modulation* mod,
     ax_hw_write_fifo(config, header, 3);
     ax_hw_write_fifo(config, data, (uint8_t)chunk_length);
     data += chunk_length;
-    ax_fifo_commit(config);       /* commit */
+//    ax_fifo_commit(config);       /* commit */
   }
 }
 /**
@@ -297,7 +299,7 @@ void ax_wait_for_oscillator(ax_config* config)
     i++;
   }
 
-  debug_printf("osc stable in %d cycles\n", i);
+  debug_printf("osc stabilized in %d cycles\n", i);
 }
 /**
  * Converts a value to 4-bit mantissa and 4-bit exponent
@@ -352,7 +354,7 @@ uint8_t ax_scratch(ax_config* config)
 void ax_set_pwrmode(ax_config* config, uint8_t pwrmode)
 {
   config->pwrmode = pwrmode;
-  ax_hw_write_register_8(config, AX_REG_PWRMODE, 0x60 | pwrmode); /* TODO R-m-w */
+  ax_hw_write_register_8(config, AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | pwrmode); /* TODO R-m-w */
 }
 
 /**
@@ -405,7 +407,7 @@ void ax_set_pin_configuration(ax_config* config)
   ax_hw_write_register_8(config, AX_REG_PINFUNCDCLK, _pinfunc_dclk);
   ax_hw_write_register_8(config, AX_REG_PINFUNCDATA, _pinfunc_data);
   ax_hw_write_register_8(config, AX_REG_PINFUNCANTSEL, _pinfunc_antsel);
-  ax_hw_write_register_8(config, AX_REG_PINFUNCPWRAMP, _pinfunc_pwramp);
+//  ax_hw_write_register_8(config, AX_REG_PINFUNCPWRAMP, _pinfunc_pwramp);
 }
 
 /**
@@ -755,7 +757,7 @@ void ax_set_tx_parameters(ax_config* config, ax_modulation* mod)
   uint8_t modcfga;
   float p;
   uint16_t pwr;
-  uint32_t deviation;
+  uint32_t deviation = 0;
   uint32_t fskdev, txrate;
 
   /* frequency shaping mode of transmitter */
@@ -1040,9 +1042,9 @@ void ax_set_packet_controller_parameters(ax_config* config, ax_modulation* mod,
 
   /* packet accept flags. always accept some things, more from config */
   ax_hw_write_register_8(config, AX_REG_PKTACCEPTFLAGS,
-  /*                       AX_PKT_ACCEPT_MULTIPLE_CHUNKS |  // (LRGP) */
-  /*                       AX_PKT_ACCEPT_ADDRESS_FAILURES | // (ADDRF) */
-  /*                       AX_PKT_ACCEPT_RESIDUE |          // (RESIDUE) */
+                         AX_PKT_ACCEPT_MULTIPLE_CHUNKS |  // (LRGP) */
+                         AX_PKT_ACCEPT_ADDRESS_FAILURES | // (ADDRF) */
+                         AX_PKT_ACCEPT_RESIDUE |          // (RESIDUE) */
                          config->pkt_accept_flags);
 }
 /**
@@ -1480,16 +1482,16 @@ void ax_rx_on(ax_config* config, ax_modulation* mod)
 
   ax_set_registers(config, mod, NULL);
 
-  /* Place chip in FULLRX mode */
-  ax_set_pwrmode(config, AX_PWRMODE_FULLRX);
-
   ax_set_registers_rx(config, mod);    /* set rx registers */
-
-  /* Enable TCXO if used */
-  if (config->tcxo_enable) { config->tcxo_enable(); }
 
   /* Clear FIFO */
   ax_fifo_clear(config);
+  
+  /* Place chip in FULLRX mode */
+  ax_set_pwrmode(config, AX_PWRMODE_FULLRX);
+  
+  /* Enable TCXO if used */
+  if (config->tcxo_enable) { config->tcxo_enable(); }
 
   /* Tune Baseband - Experimental */
   //ax_hw_write_register_8(config, AX_REG_BBTUNE, 0x10);
@@ -1766,4 +1768,120 @@ int ax_init(ax_config* config)
 #endif
 
   return AX_INIT_OK;
+}
+
+void ax_print_status(ax_config* config) {
+    uint16_t status = ax_hw_status();
+    uint8_t fifoStat = ax_hw_read_register_8(config, AX_REG_FIFOSTAT);
+    debug_printf("hwStatus - %u%u%u%u %u%u%u%u %u%u%u%u %u%u%u%u, fifoStatus - %u%u%u%u %u%u%u%u\n",
+            ((status & (1 << 15)) >> 15),
+            ((status & (1 << 14)) >> 14),
+            ((status & (1 << 13)) >> 13),
+            ((status & (1 << 12)) >> 12),
+            ((status & (1 << 11)) >> 11),
+            ((status & (1 << 10)) >> 10),
+            ((status & (1 << 9)) >> 9),
+            ((status & (1 << 8)) >> 8),
+            ((status & (1 << 7)) >> 7),
+            ((status & (1 << 6)) >> 6),
+            ((status & (1 << 5)) >> 5),
+            ((status & (1 << 4)) >> 4),
+            ((status & (1 << 3)) >> 3),
+            ((status & (1 << 2)) >> 2),
+            ((status & (1 << 1)) >> 1),
+            ((status & (1 << 0)) >> 0),
+            ((fifoStat & (1 << 7)) >> 7),
+            ((fifoStat & (1 << 6)) >> 6),
+            ((fifoStat & (1 << 5)) >> 5),
+            ((fifoStat & (1 << 4)) >> 4),
+            ((fifoStat & (1 << 3)) >> 3),
+            ((fifoStat & (1 << 2)) >> 2),
+            ((fifoStat & (1 << 1)) >> 1),
+            ((fifoStat & (1 << 0)) >> 0));
+}
+
+#define AX_TX_PACKET_MAX_SIZE (200u)
+int ax_mh_write_packet_to_fifo(ax_config* config, ax_modulation* mod,
+                uint8_t* packet, uint8_t length) {
+    if (length > AX_TX_PACKET_MAX_SIZE) {
+        debug_printf("tx packet is too large, aborting\n");
+        return 0;
+    }
+    
+    /* write a preamble, I have no idea what I'm doing here :) */
+    uint8_t preamble[4];
+//    preamble[0] = 0x7E;
+//    preamble[1] = 0x11;
+//    preamble[2] = 0x55;
+    preamble[0] = AX_FIFO_CHUNK_REPEATDATA;
+    preamble[1] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_NOCRC;
+    preamble[2] = 0x03;
+    preamble[3] = 0x55;
+    ax_hw_write_fifo(config, preamble, 4);
+    
+    /* write commands to fifo to prepare it for the incoming packet */
+    uint8_t packetParams[3];
+    packetParams[0] = AX_FIFO_CHUNK_DATA; // fifo data command
+    packetParams[1] = length + 1; // length byte, +1 to include flag byte
+    packetParams[2] = (AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW); // flag byte, setting UNENC and RAW, not sure how this will affect things
+    ax_hw_write_fifo(config, packetParams, 3);
+    
+    /* write the packet */
+    ax_hw_write_fifo(config, packet, length);
+    
+    return 1;
+}
+
+int ax_mh_tx_packet(ax_config* config, ax_modulation* mod,
+                uint8_t* packet, uint8_t length) {
+    uint8_t returnVal = 0;
+    if (mod->par.is_params_set != 0x51) {
+        debug_printf("mod->par must be set first! call ax_default_params...\n");
+        return returnVal;
+    }
+        
+    /* Registers */
+    ax_set_registers(config, mod, NULL);
+    ax_set_registers_tx(config, mod);
+    
+    /* Clear FIFO */
+    ax_fifo_clear(config);
+
+    /* Place chip in FULLTX mode */
+    ax_set_pwrmode(config, AX_PWRMODE_FULLTX);
+    
+    /* enable the tcxo if used CHANGE USING FUNCTION POINTERS LATER */
+    _pinfunc_pwramp = 0x07;
+    ax_hw_write_register_8(config, AX_REG_PINFUNCPWRAMP, _pinfunc_pwramp);
+    
+    /* write preamble and packet to FIFO */
+    if (ax_mh_write_packet_to_fifo(config, mod, packet, length)) {
+        /* Wait for oscillator to start running  */
+        ax_wait_for_oscillator(config);
+
+        /* commit packet to the FIFO for tx */
+        ax_fifo_commit(config);
+        
+        /* if DEBUG is enabled, status will print */
+//        ax_print_status(config);
+
+        /* wait for tx to complete */
+        // block for now, can config to be interrupt driven later
+        while (ax_hw_read_register_8(config, AX_REG_RADIOSTATE) != 0) {};
+        returnVal = 1;
+        debug_printf("tx complete\n");
+    }
+    
+    /* disable the tcxo if used CHANGE USING FUNCTION POINTERS LATER */
+    _pinfunc_pwramp = 0x00;
+    ax_hw_write_register_8(config, AX_REG_PINFUNCPWRAMP, _pinfunc_pwramp);
+    
+    /* Place chip in POWERDOWN mode */
+    ax_set_pwrmode(config, AX_PWRMODE_POWERDOWN);
+
+    return returnVal;
+}
+int ax_mh_rx_packet(ax_config* config, ax_modulation* mod,
+                ax_packet* rx_pkt) {
+    return 0;
 }

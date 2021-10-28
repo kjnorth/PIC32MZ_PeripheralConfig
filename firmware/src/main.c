@@ -13,6 +13,7 @@
 
 #include "Encoders.h"
 #include "IMU_HWT901B.h"
+#include "MH_AX.h"
 #include "NVData.h"
 #include "Print.h"
 #include "SoftPWM.h"
@@ -23,6 +24,7 @@
 #include "ax/ax.h"
 #include "ax/ax_hw.h"
 #include "ax/ax_modes.h"
+#include "ax/ax_reg.h"
 #include "ax/ax_reg_values.h"
 
 #define SW_VERSION 0.1f
@@ -43,7 +45,7 @@ uint16_t PWM_CompareValueGet(uint8_t curDutyCycle);
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop);
 
 // AX5243 Test Code
-#define AX_RECEIVER
+//#define AX_RECEIVER
 static unsigned char dataToReceive[256];
 void masterhaul_spi_transfer(unsigned char* data, uint8_t length) {
     SPI1_WriteRead(data, length, dataToReceive, length);
@@ -65,42 +67,8 @@ int main(int argc, char** argv) {
     OCMP4_Enable();
     TMR2_Start(); // for OCMP4
     NVData_Init();
-
-    ax_config config;
-    memset(&config, 0, sizeof(ax_config));
-
-    config.pwrmode = AX_PWRMODE_POWERDOWN;
-    config.clock_source = AX_CLOCK_SOURCE_CRYSTAL;
-    config.f_xtal = 0;
-
-    config.synthesiser.vco_type = AX_VCO_INTERNAL;
-    config.synthesiser.A.frequency = 815200000;
-    config.synthesiser.B.frequency = 815200000;
     
-    config.load_capacitance = 0;
-    config.tcxo_enable = config.tcxo_disable = NULL;
-    config.transmit_path = AX_TRANSMIT_PATH_SE;
-    config.transmit_power_limit = 0.0f;
-    config.spi_transfer = masterhaul_spi_transfer;
-
-    config.pkt_store_flags = AX_PKT_STORE_RSSI | AX_PKT_STORE_RF_OFFSET;
-    config.pkt_accept_flags = 0;
-    config.wakeup_period_ms = 0;
-    config.wakeup_xo_early_ms = 0;
-
-    /* ------- init ------- */
-    int initStatus = ax_init(&config);
-    ax_default_params(&config, &gmsk_hdlc_fec_modulation);
-    
-#ifdef AX_RECEIVER    
-    ax_packet rx_pkt;
-    ax_rx_on(&config, &gmsk_hdlc_fec_modulation);
-#else
-    uint8_t tx_pkt[0x100];
-    ax_tx_on(&config, &gmsk_hdlc_fec_modulation);
-#endif
-    
-    Print_EnqueueMsg("Hello Arduino from the PIC32. RF init status %d\n", initStatus);
+    Print_EnqueueMsg("Hello Arduino from the PIC32.\n");
 
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
@@ -115,23 +83,48 @@ int main(int argc, char** argv) {
 
         unsigned long ct = Time_GetMs();
         static unsigned long pt = 0;
-        if (ct - pt >= 1000) {
+        if (ct - pt >= 5000) {
             pt = ct;
 //            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u, freq %u\n",
 //                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());
-            Print_EnqueueMsg("roll %0.2f, pitch %0.2f\n", IMU_RollGet(), IMU_PitchGet());
+//            Print_EnqueueMsg("roll %0.2f, pitch %0.2f, hw status 0x%04X\n", IMU_RollGet(), IMU_PitchGet(), ax_hw_status());
+            
         }
         Print_Task();
         IMU_SampleTask();
         
+        static unsigned long pTxTime = 0;
+        if (ct - pTxTime >= 5000) {
+            pTxTime = ct;
 #ifdef AX_RECEIVER
-        if (ax_rx_packet(&config, &rx_pkt)) {
-            Print_EnqueueMsg("rx!\n");
-        }
+            // write the COMMIT command to the FIFOSTAT REGISTER to make the written data visible to the receiver???
+            if (ax_rx_packet(&config, &rx_pkt)) {
+                Print_EnqueueMsg("rx!\n");
+                LED1_Toggle();
+            }
 #else
-        strcpy((char*) tx_pkt, "ughdffgiuhdfudshfdjshfdjshfsudhfdskjfdfd");
-        ax_tx_packet(&config, &gmsk_hdlc_fec_modulation, tx_pkt, 40);
+            static uint16_t counter = 0;
+            counter++;
+            /* ORDER
+             * 0 - demo packet len
+             * 1 - dest addr low
+             * 2 - dest addr high
+             * DEMO PACKET STARTS NOW
+             * 3 - counter low
+             * 4 - counter high
+             * 5-8 - dummy data 
+             */
+            uint8_t packet[9] = { 0x06, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
+            packet[3] = (uint8_t) (counter & 0x00FF);
+            packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
+//            int ret = 
+            AX_TransmitPacket(packet, 9);
+//            Print_EnqueueMsg("tx good %d, ", ret);
+//            AX_PrintStatus();
+            
+            // how do i tell if i got an ACK??
 #endif        
+        }
     }
 
     return (EXIT_SUCCESS);

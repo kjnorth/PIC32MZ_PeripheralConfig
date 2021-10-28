@@ -78,7 +78,7 @@
 #define AX_REG_PINFUNCDATA		0x023	/* Pin Function DATA */
 #define AX_REG_PINFUNCIRQ		0x024	/* Pin Function IRQ */
 #define AX_REG_PINFUNCANTSEL	0x025	/* Pin Function ANTSEL */
-#define AX_REG_PINFUNCPWRAMP	0x026	/* Pin Function PWRAMP */
+#define AX_REG_PINFUNCPWRAMP	0x026	/* Pin Function PWRAMP */ // also PINFUNCTCXO_EN depending on what AN you look at
 #define AX_REG_PWRAMP			0x027	/* PWRAMP Control */
 
 /**

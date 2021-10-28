@@ -72,6 +72,7 @@
       <itemPath>../src/IMU_HWT901B.h</itemPath>
       <itemPath>../src/UART_Common.h</itemPath>
       <itemPath>../src/RF_AX5243.h</itemPath>
+      <itemPath>../src/MH_AX.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -145,6 +146,7 @@
       <itemPath>../src/NVData.c</itemPath>
       <itemPath>../src/SoftPWM.c</itemPath>
       <itemPath>../src/IMU_HWT901B.c</itemPath>
+      <itemPath>../src/MH_AX.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
