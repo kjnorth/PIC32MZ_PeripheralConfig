@@ -1135,12 +1135,12 @@ void ax_set_registers(ax_config* config, ax_modulation* mod,
   // AGC, TIMEGAIN, DRGAIN, PHASEGAIN, FREQUENCYGAIN, AMPLITUDEGAIN, FREQDEV
   if (mod->continuous) {        /* continuous transmission */
     ax_hw_write_register_8(config, AX_REG_RXPARAMSETS, 0xFF);  /* 3, 3, 3, 3 */
-    ax_set_rx_parameter_set(config, AX_REG_RX_PARAMETER3, &mod->par.rx_param_sets[3]);
+    ax_set_rx_parameter_set(config, AX_REG_RX_PARAM_SET3, &mod->par.rx_param_sets[3]);
   } else {                      /* occasional packets */
     ax_hw_write_register_8(config, AX_REG_RXPARAMSETS, 0xF4);  /* 0, 1, 3, 3 */
-    ax_set_rx_parameter_set(config, AX_REG_RX_PARAMETER0, &mod->par.rx_param_sets[0]);
-    ax_set_rx_parameter_set(config, AX_REG_RX_PARAMETER1, &mod->par.rx_param_sets[1]);
-    ax_set_rx_parameter_set(config, AX_REG_RX_PARAMETER3, &mod->par.rx_param_sets[3]);
+    ax_set_rx_parameter_set(config, AX_REG_RX_PARAM_SET0, &mod->par.rx_param_sets[0]);
+    ax_set_rx_parameter_set(config, AX_REG_RX_PARAM_SET1, &mod->par.rx_param_sets[1]);
+    ax_set_rx_parameter_set(config, AX_REG_RX_PARAM_SET3, &mod->par.rx_param_sets[3]);
   }
 
   // MODCFG, FSKDEV, TXRATE, TXPWRCOEFF

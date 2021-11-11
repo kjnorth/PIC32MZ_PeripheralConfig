@@ -1522,7 +1522,7 @@ children:
     - type: Values
       children:
       - type: User
-        attributes: {value: ''}
+        attributes: {value: SPI1_SS}
   - type: String
     attributes: {id: BSP_PIN_62_FUNCTION_TYPE}
     children:

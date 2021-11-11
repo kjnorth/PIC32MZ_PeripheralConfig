@@ -24,6 +24,7 @@
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
 #define AX_TX_PACKET_MAX_SIZE (200u)
+#define AX_FIFO_MAX_SIZE (256u)
 // **** END GLOBAL MACROS ****
 
 #ifdef	__cplusplus
@@ -31,7 +32,11 @@ extern "C" {
 #endif
 
     // **** GLOBAL TYPEDEFS ****
-
+    typedef enum {
+        AX_MODE_NONE = 0,
+        AX_MODE_PTX,
+        AX_MODE_PRX,
+    } ax_mode_t;
     // **** END GLOBAL TYPEDEFS ****
     // -------------------------------------------------------------------------
     // **** GLOBAL VARIABLES ****
@@ -39,14 +44,16 @@ extern "C" {
     // **** END GLOBAL VARIABLES ****
     // -------------------------------------------------------------------------
     // **** GLOBAL FUNCTION PROTOTYPES ****
-    void AX_InitTx(void);
-    void AX_InitRx(void);
-    
-    int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
-    void AX_ReceivePacket(uint8_t* rxPacket);
+    bool AX_Init(ax_mode_t _mode);
+    void AX_InitConfigRegisters(void);
+    void AX_InitTxRegisters(void);
+    void AX_InitRxRegisters(void);
     
     uint16_t AX_GetStatus(void);
     void AX_PrintStatus(void);
+    
+    void AX_ReceivePacket(uint8_t* rxPacket);
+    int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
     // **** END GLOBAL FUNCTION PROTOTYPES ****
     // -------------------------------------------------------------------------
 #ifdef	__cplusplus

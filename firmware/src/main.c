@@ -44,18 +44,7 @@ void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 uint16_t PWM_CompareValueGet(uint8_t curDutyCycle);
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop);
 
-// AX5243 Test Code
-//#define AX_RECEIVER
-static unsigned char dataToReceive[256];
-void masterhaul_spi_transfer(unsigned char* data, uint8_t length) {
-    SPI1_WriteRead(data, length, dataToReceive, length);
-    memcpy(data, dataToReceive, length);
-}
-// END AX5243 Test Code
-
-/*
- * 
- */
+#define AX_RECEIVER
 int main(int argc, char** argv) {
     SYS_Initialize(NULL); // inits all peripherals - UART, SPI, TMR, OCMP, etc.
     LED1_Clear();
@@ -70,41 +59,35 @@ int main(int argc, char** argv) {
     
     Print_EnqueueMsg("Hello Arduino from the PIC32.\n");
 
+    ax_mode_t mode;
+    uint16_t checkTimeMs;
+#ifdef AX_RECEIVER    
+    mode = AX_MODE_PRX;
+    checkTimeMs = 2500;
+#else
+    mode = AX_MODE_PTX;
+    checkTimeMs = 5000;
+#endif
+    if (AX_Init(mode)) {
+        Print_EnqueueMsg("ax init okay\n");
+    } else {
+        Print_EnqueueMsg("ax init falied!\n");
+    }
+    
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
-
-        /* test of the nvm module
-        static bool isTested = false;
-        if (curDutyCycle > 90 && !isTested) {
-            NVData_Test();
-            isTested = true;
-        } //*/
-
-        unsigned long ct = Time_GetMs();
-        static unsigned long pt = 0;
-        if (ct - pt >= 5000) {
-            pt = ct;
-//            Print_EnqueueMsg("enc1 count %ld, enc2 count %ld, duty cycle %u, freq %u\n",
-//                    Encoders_GetCount(ENC1), Encoders_GetCount(ENC2), curDutyCycle, SoftPWM_GetFrequency());
-//            Print_EnqueueMsg("roll %0.2f, pitch %0.2f, hw status 0x%04X\n", IMU_RollGet(), IMU_PitchGet(), ax_hw_status());
-            
-        }
         Print_Task();
         IMU_SampleTask();
-        
-        static unsigned long pTxTime = 0;
-        if (ct - pTxTime >= 5000) {
-            pTxTime = ct;
+
+        unsigned long ct = Time_GetMs();      
+        static unsigned long pt = 0;
+        if (ct - pt >= checkTimeMs) {
+            pt = ct;
 #ifdef AX_RECEIVER
-            // write the COMMIT command to the FIFOSTAT REGISTER to make the written data visible to the receiver???
-            if (ax_rx_packet(&config, &rx_pkt)) {
-                Print_EnqueueMsg("rx!\n");
-                LED1_Toggle();
-            }
+            uint8_t temp[10];
+            AX_ReceivePacket(temp);
 #else
-            static uint16_t counter = 0;
-            counter++;
             /* ORDER
              * 0 - demo packet len
              * 1 - dest addr low
@@ -114,13 +97,14 @@ int main(int argc, char** argv) {
              * 4 - counter high
              * 5-8 - dummy data 
              */
-            uint8_t packet[9] = { 0x06, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
+            static uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
+            static uint16_t counter = 0;
+            counter++;
             packet[3] = (uint8_t) (counter & 0x00FF);
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
 //            int ret = 
             AX_TransmitPacket(packet, 9);
-//            Print_EnqueueMsg("tx good %d, ", ret);
-//            AX_PrintStatus();
+//            Print_EnqueueMsg("tx good %d\n", ret);
             
             // how do i tell if i got an ACK??
 #endif        

@@ -6,6 +6,8 @@
 /firmware/PIC32MZ_PeripheralConfig.X/nbproject/Package-*
 /firmware/PIC32MZ_PeripheralConfig.X/nbproject/private
 
+*.dump
+
 ~*
 
 .pio

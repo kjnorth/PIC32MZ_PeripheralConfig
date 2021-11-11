@@ -152,11 +152,15 @@
 /**
  * Receiver Parameter Sets
  */
-#define AX_REG_RX_PARAMETER0	0x120
-#define AX_REG_RX_PARAMETER1	0x130
-#define AX_REG_RX_PARAMETER2	0x140
-#define AX_REG_RX_PARAMETER3	0x150
+#define AX_REG_RX_PARAM_SET0	0x120
+#define AX_REG_RX_PARAM_SET1	0x130
+#define AX_REG_RX_PARAM_SET2	0x140
+#define AX_REG_RX_PARAM_SET3	0x150
 
+/** 
+ * Receiver Parameter Set Register LSB's
+ * OR with PARAM_SET defines above to compute register value
+ */
 #define AX_RX_AGCGAIN			0x0	/* AGC Speed */
 #define AX_RX_AGCTARGET			0x1	/* AGC Target */
 #define AX_RX_AGCAHYST			0x2	/* AGC Analog Hysteresis */
@@ -256,6 +260,9 @@
 #define AX_REG_GPADCCTRL		0x300	/* General Purpose ADC Control */
 #define AX_REG_GPADCPERIOD		0x301	/* GPADC Sampling Period */
 #define AX_REG_GPADC13VALUE		0x308	/* GPADC13 Value */
+// splitting up GPADC13VALUE define into its respective registers
+#define AX_REG_GPADC13VALUE1    0x308
+#define AX_REG_GPADC13VALUE0	0x309
 
 /**
  * LPOSC Calibration
@@ -280,3 +287,23 @@
 #define AX_REG_REF				0xF0D	/* Reference */
 #define AX_REG_XTALOSC			0xF10	/* Crystal Oscillator Control */
 #define AX_REG_XTALAMPL			0xF11	/* Crystal Oscillator Amplitude Control */
+
+#define AX_REG_0xF00            0xF00
+#define AX_REG_0xF0C            0xF0C
+#define AX_REG_0xF0D            0xF0D
+#define AX_REG_0xF10            0xF10
+#define AX_REG_0xF11            0xF11
+#define AX_REG_0xF18            0xF18
+#define AX_REG_0xF1C            0xF1C
+#define AX_REG_0xF21            0xF21
+#define AX_REG_0xF22            0xF22
+#define AX_REG_0xF23            0xF23
+#define AX_REG_0xF26            0xF26
+#define AX_REG_0xF30            0xF30
+#define AX_REG_0xF31            0xF31
+#define AX_REG_0xF32            0xF32
+#define AX_REG_0xF33            0xF33
+#define AX_REG_0xF34            0xF34
+#define AX_REG_0xF35            0xF35
+#define AX_REG_0xF44            0xF44
+#define AX_REG_0xF72            0xF72

@@ -12,6 +12,13 @@ children:
       - type: Dynamic
         attributes: {id: spi1, value: 'true'}
   - type: Integer
+    attributes: {id: SPI_BAUD_RATE}
+    children:
+    - type: Values
+      children:
+      - type: User
+        attributes: {value: '1000000'}
+  - type: Integer
     attributes: {id: SPI_BRG_VALUE}
     children:
     - type: Values
@@ -26,4 +33,4 @@ children:
       - type: User
         attributes: {value: 'false'}
 - type: ElementPosition
-  attributes: {x: '470', y: '100', id: spi1}
+  attributes: {x: '471', y: '100', id: spi1}

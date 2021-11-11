@@ -372,6 +372,10 @@
 #define ENC7_0_Get()               ((PORTB >> 14) & 0x1)
 #define ENC7_0_PIN                  GPIO_PIN_RB14
 
+/*** Macros for SPI1_SS pin ***/
+#define SPI1_SS_Get()               ((PORTB >> 15) & 0x1)
+#define SPI1_SS_PIN                  GPIO_PIN_RB15
+
 /*** Macros for ENC8_B pin ***/
 #define ENC8_B_Set()               (LATHSET = (1<<4))
 #define ENC8_B_Clear()             (LATHCLR = (1<<4))

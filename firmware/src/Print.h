@@ -25,12 +25,15 @@
 #include <stdarg.h>
 #include <stdbool.h>
 
+#define PRINT_BUFFER_SIZE (128u) // must be multiples of 32
+
 #ifdef	__cplusplus
 extern "C" {
 #endif
 
     void Print_Init(void);
     bool Print_EnqueueMsg(const char* fmt, ...); // call with a message to print
+    void Print_EnqueueBuffer(uint8_t* b, uint8_t len); // call with a buffer of data to print
     bool Print_IsQueueEmpty(void);
     bool Print_IsQueueFull(void);
     void Print_Task(void); // call continuously to empty print queue as messages are enqueued
