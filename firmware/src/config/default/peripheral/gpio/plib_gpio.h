@@ -450,6 +450,17 @@
 #define PWM_SOFT4_Get()               ((PORTH >> 11) & 0x1)
 #define PWM_SOFT4_PIN                  GPIO_PIN_RH11
 
+/*** Macros for AX_IRQ_PIN pin ***/
+#define AX_IRQ_PIN_Set()               (LATASET = (1<<4))
+#define AX_IRQ_PIN_Clear()             (LATACLR = (1<<4))
+#define AX_IRQ_PIN_Toggle()            (LATAINV= (1<<4))
+#define AX_IRQ_PIN_OutputEnable()      (TRISACLR = (1<<4))
+#define AX_IRQ_PIN_InputEnable()       (TRISASET = (1<<4))
+#define AX_IRQ_PIN_Get()               ((PORTA >> 4) & 0x1)
+#define AX_IRQ_PIN_PIN                  GPIO_PIN_RA4
+#define AX_IRQ_PIN_InterruptEnable()   (CNENASET = (1<<4))
+#define AX_IRQ_PIN_InterruptDisable()  (CNENACLR = (1<<4))
+
 /*** Macros for U1RX_FROM_IMU pin ***/
 #define U1RX_FROM_IMU_Get()               ((PORTF >> 4) & 0x1)
 #define U1RX_FROM_IMU_PIN                  GPIO_PIN_RF4

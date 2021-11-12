@@ -45,10 +45,10 @@
 
 
 /* Array to store callback objects of each configured interrupt */
-GPIO_PIN_CALLBACK_OBJ portPinCbObj[4];
+GPIO_PIN_CALLBACK_OBJ portPinCbObj[5];
 
 /* Array to store number of interrupts in each PORT Channel + previous interrupt count */
-uint8_t portNumCb[10 + 1] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 4, };
+uint8_t portNumCb[10 + 1] = { 0, 1, 1, 1, 1, 1, 1, 1, 1, 3, 5, };
 
 /******************************************************************************
   Function:
@@ -65,6 +65,11 @@ void GPIO_Initialize ( void )
 
     /* PORTA Initialization */
     ANSELACLR = 0x623; /* Digital Mode Enable */
+
+    /* Change Notice Enable */
+    CNCONASET = _CNCONA_ON_MASK;
+    PORTA;
+    IEC3SET = _IEC3_CNAIE_MASK;
     /* PORTB Initialization */
     ANSELBCLR = 0xf1f5; /* Digital Mode Enable */
     /* PORTC Initialization */
@@ -135,15 +140,17 @@ void GPIO_Initialize ( void )
 
     uint32_t i;
     /* Initialize Interrupt Pin data structures */
-    portPinCbObj[0 + 0].pin = GPIO_PIN_RJ13;
+    portPinCbObj[1 + 0].pin = GPIO_PIN_RJ13;
     
-    portPinCbObj[0 + 1].pin = GPIO_PIN_RJ14;
+    portPinCbObj[1 + 1].pin = GPIO_PIN_RJ14;
     
-    portPinCbObj[2 + 0].pin = GPIO_PIN_RK1;
+    portPinCbObj[3 + 0].pin = GPIO_PIN_RK1;
     
-    portPinCbObj[2 + 1].pin = GPIO_PIN_RK2;
+    portPinCbObj[3 + 1].pin = GPIO_PIN_RK2;
     
-    for(i=0; i<4; i++)
+    portPinCbObj[0 + 0].pin = GPIO_PIN_RA4;
+    
+    for(i=0; i<5; i++)
     {
         portPinCbObj[i].callback = NULL;
     }
@@ -429,6 +436,38 @@ bool GPIO_PinInterruptCallbackRegister(
 
 // *****************************************************************************
 /* Function:
+    void CHANGE_NOTICE_A_InterruptHandler(void)
+
+  Summary:
+    Interrupt Handler for change notice interrupt for channel A.
+
+  Remarks:
+	It is an internal function called from ISR, user should not call it directly.
+*/
+    
+void CHANGE_NOTICE_A_InterruptHandler(void)
+{
+    uint8_t i;
+    uint32_t status;
+
+    status  = CNSTATA;
+    status &= CNENA;
+
+    PORTA;
+    IFS3CLR = _IFS3_CNAIF_MASK;
+
+    /* Check pending events and call callback if registered */
+    for(i = 0; i < 1; i++)
+    {
+        if((status & (1 << (portPinCbObj[i].pin & 0xF))) && (portPinCbObj[i].callback != NULL))
+        {
+            portPinCbObj[i].callback (portPinCbObj[i].pin, portPinCbObj[i].context);
+        }
+    }
+}
+
+// *****************************************************************************
+/* Function:
     void CHANGE_NOTICE_J_InterruptHandler(void)
 
   Summary:
@@ -450,7 +489,7 @@ void CHANGE_NOTICE_J_InterruptHandler(void)
     IFS3CLR = _IFS3_CNJIF_MASK;
 
     /* Check pending events and call callback if registered */
-    for(i = 0; i < 2; i++)
+    for(i = 1; i < 3; i++)
     {
         if((status & (1 << (portPinCbObj[i].pin & 0xF))) && (portPinCbObj[i].callback != NULL))
         {
@@ -482,7 +521,7 @@ void CHANGE_NOTICE_K_InterruptHandler(void)
     IFS3CLR = _IFS3_CNKIF_MASK;
 
     /* Check pending events and call callback if registered */
-    for(i = 2; i < 4; i++)
+    for(i = 3; i < 5; i++)
     {
         if((status & (1 << (portPinCbObj[i].pin & 0xF))) && (portPinCbObj[i].callback != NULL))
         {

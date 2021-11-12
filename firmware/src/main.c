@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
     uint16_t checkTimeMs;
 #ifdef AX_RECEIVER    
     mode = AX_MODE_PRX;
-    checkTimeMs = 2500;
+    checkTimeMs = 5;
 #else
     mode = AX_MODE_PTX;
     checkTimeMs = 5000;
@@ -88,23 +88,13 @@ int main(int argc, char** argv) {
             uint8_t temp[10];
             AX_ReceivePacket(temp);
 #else
-            /* ORDER
-             * 0 - demo packet len
-             * 1 - dest addr low
-             * 2 - dest addr high
-             * DEMO PACKET STARTS NOW
-             * 3 - counter low
-             * 4 - counter high
-             * 5-8 - dummy data 
-             */
             static uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
             static uint16_t counter = 0;
             counter++;
             packet[3] = (uint8_t) (counter & 0x00FF);
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
-//            int ret = 
             AX_TransmitPacket(packet, 9);
-//            Print_EnqueueMsg("tx good %d\n", ret);
+            LED1_Toggle();
             
             // how do i tell if i got an ACK??
 #endif        

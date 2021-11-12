@@ -34,6 +34,14 @@
 #else
 #define debug(...)
 #endif
+
+// settings to switch between internal oscillator or TCXO
+#define PINFUNCPWRAMP_VAL (0x07u) // 0x~7 to enable TCXO, 0x~0 for internal oscillator use
+#define XTALCAP_VAL (0x00) // 0x00 for TCXO, some other value for crystal
+#define PLLVCODIV_VAL (0x21u) // set to 0x20 if Fxtal is less than 24.8MHz, or 0x21 otherwise
+#define F10_VAL (0x0Du) // set to 0x04 for TCXO, 0x0D if frequency of TCXO or internal osc is > 43MHz, or 0x03 otherwise
+#define F11_VAL (0x00u) // set to 0x00 for TCXO, 0x07 if crystal is used
+#define F35_VAL (0x11u) // set to 0x10 if Fxtal is less than 24.8MHz, or 0x11 otherwise
 // **** END MODULE MACROS ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
@@ -45,9 +53,12 @@ ax_mode_t Mode = AX_MODE_NONE;
 uint16_t AXStatus = 0;
 uint8_t PllRangingA = 0;
 uint8_t ChannelVcoi = 0; // access this variable when ax crazy library calls axradio_get_pllvcoi function
+bool PrxDataAvailable = false;
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
+void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context);
+
 uint8_t AX_InitRegistersCommon(void);
 
 int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length);
@@ -90,7 +101,7 @@ bool AX_Init(ax_mode_t _mode) {
     
     AX_Write8(AX_REG_PLLLOOP, 0x09);
     AX_Write8(AX_REG_PLLCPI, 0x08);
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN);
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY); // added STANDBY in attempt to get internal crystal running
     AX_Write8(AX_REG_MODULATION, 0x08);
     AX_Write24(AX_REG_FSKDEV, 0x000000);
     /* Wait for oscillator to start running  */
@@ -111,14 +122,13 @@ bool AX_Init(ax_mode_t _mode) {
     }
     
     // VCOI calibration
-    AX_InitTxRegisters();
+    AX_InitTxRegisters(); // good idea to re-init Tx registers after ranging
     AX_Write8(AX_REG_PLLLOOP, 0x0D);
     AX_Write8(AX_REG_0xF35, 0x92);
     
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_SYNTHTX);
     uint8_t vcoiSave = AX_Read8(AX_REG_PLLVCOI);
     AX_Write8(AX_REG_PLLRANGINGA, PllRangingA & 0x0F);
-    AX_Write32(AX_REG_FREQA, 0x1216EEEF); // NOTE: this may need to be changed when switching to internal crystal
     
     uint8_t i;
     for (i = 0; i < 2; i++) {
@@ -129,8 +139,7 @@ bool AX_Init(ax_mode_t _mode) {
     
     AX_Write8(AX_REG_PLLVCOI, vcoiSave);
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-    AX_InitConfigRegisters();
-    AX_Write32(AX_REG_FREQA, 0x1216EEEF); // NOTE: this may need to be changed when switching to internal crystal
+    AX_InitConfigRegisters(); // must re-init registers after VCOI calibration
     
     if (Mode == AX_MODE_PRX) {
         AX_InitRxRegisters();
@@ -151,7 +160,7 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_PINFUNCDATA, 0x00); // set to output '0'
     AX_Write8(AX_REG_PINFUNCIRQ, 0x00); // 0x~0 to output '0', 0x~3 to enable IRQ
     AX_Write8(AX_REG_PINFUNCANTSEL, 0x00); // set to output '0'
-    AX_Write8(AX_REG_PINFUNCPWRAMP, 0x07); // 0x~0 for internal oscillator use, 0x~7 to enable TCXO
+    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
     AX_Write16(AX_REG_FIFOTHRESH, 0x0000);
     AX_Write8(AX_REG_WAKEUPXOEARLY, 0x01);
     AX_Write16(AX_REG_IFFREQ, 0x0106);
@@ -228,7 +237,6 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_MATCH0LEN, 0x1F);
     AX_Write8(AX_REG_MATCH0MAX, 0x1F); // this says at least 31 bits of match0 pattern must match
     AX_Write16(AX_REG_MATCH1PAT, 0x5555); // this is preamble1 that Rx uses to detect/accept an incoming packet
-//    AX_Write8(AX_REG_MATCH1LEN, 0x8A); // NOTE: changing this because it seems reasonable
     AX_Write8(AX_REG_MATCH1LEN, 0x0A);
     AX_Write8(AX_REG_MATCH1MAX, 0x0A); // this says at least 10 bits of match1 pattern must match
     AX_Write8(AX_REG_TMGTXBOOST, 0x5B);
@@ -242,21 +250,20 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_RSSIABSTHR, 0xE0);
     AX_Write8(AX_REG_BGNDRSSITHR, 0x00);
     AX_Write8(AX_REG_PKTCHUNKSIZE, 0x0D);
-    AX_Write8(AX_REG_PKTSTOREFLAGS, 0x00/*0x15*/); // store timer value, RF frequency offset, RSSI
-//    AX_Write8(AX_REG_PKTACCEPTFLAGS, 0x20); // accept packets that span multiple FIFO chunks
-        AX_Write8(AX_REG_PKTACCEPTFLAGS, 0x3F); // accept any god dang packet
+    AX_Write8(AX_REG_PKTSTOREFLAGS, 0x00);
+    AX_Write8(AX_REG_PKTACCEPTFLAGS, 0x20); // accept packets that span multiple FIFO chunks
     AX_Write16(AX_REG_DACVALUE, 0x0000);
     AX_Write8(AX_REG_DACCONFIG, 0x00);
     AX_Write8(AX_REG_REF, 0x03);
-    AX_Write8(AX_REG_0xF10, 0x04); // set to 0x04 for TCXO, 0x0D if frequency of TCXO or internal osc is > 43MHz, or 0x03 otherwise
-    AX_Write8(AX_REG_0xF11, 0x00); // set to 0x00 for TCXO, 0x07 if crystal is used
+    AX_Write8(AX_REG_0xF10, F10_VAL);
+    AX_Write8(AX_REG_0xF11, F11_VAL);
     AX_Write8(AX_REG_0xF1C, 0x07);
     AX_Write8(AX_REG_0xF21, 0x68);
     AX_Write8(AX_REG_0xF22, 0xFF);
     AX_Write8(AX_REG_0xF23, 0x84);
     AX_Write8(AX_REG_0xF26, 0x98);
     AX_Write8(AX_REG_0xF34, 0x08);
-    AX_Write8(AX_REG_0xF35, 0x11);
+    AX_Write8(AX_REG_0xF35, F35_VAL); /* 0x11 from AX RadioLab*/
     AX_Write8(AX_REG_0xF44, 0x25);
 }
 
@@ -264,8 +271,8 @@ void AX_InitTxRegisters(void) {
     AX_InitRegistersCommon();
     AX_Write8(AX_REG_PLLLOOP, 0x07);
     AX_Write8(AX_REG_PLLCPI, 0x12);
-    AX_Write8(AX_REG_PLLVCODIV, 0x20);
-    AX_Write8(AX_REG_XTALCAP, 0x00);
+    AX_Write8(AX_REG_PLLVCODIV, PLLVCODIV_VAL);
+    AX_Write8(AX_REG_XTALCAP, XTALCAP_VAL);
     AX_Write8(AX_REG_0xF00, 0x0F);
     AX_Write8(AX_REG_0xF18, 0x06);
 }
@@ -274,7 +281,7 @@ void AX_InitRxRegisters(void) {
     AX_InitRegistersCommon();
     AX_Write8(AX_REG_PLLLOOP, 0x07);
     AX_Write8(AX_REG_PLLCPI, 0x08);
-    AX_Write8(AX_REG_PLLVCODIV, 0x20);
+    AX_Write8(AX_REG_PLLVCODIV, XTALCAP_VAL);
     AX_Write8(AX_REG_XTALCAP, 0x00);
     AX_Write8(AX_REG_0xF00, 0x0F);
     AX_Write8(AX_REG_0xF18, 0x06);
@@ -289,8 +296,14 @@ void AX_InitRxRegisters(void) {
     
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS); // clear FIFO
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLRX);
-    AX_EnableOscillator();
+    
     // TODO: enable FIFO not empty interrupt once those are used
+    AX_Write8(AX_REG_PINFUNCIRQ, 0x03); // 0x00 to output '0', 0x03 to enable IRQ; no inversion, no pullup
+    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY);
+    GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_PRX_IRQ_Handler, (uintptr_t) NULL);
+    GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
+    
+    AX_EnableOscillator();
 }
 
 uint8_t AX_InitRegistersCommon(void) {
@@ -324,6 +337,7 @@ void AX_PrintStatus(void) {
 }
 
 void AX_ReceivePacket(uint8_t* rxPacket) {
+    /*
     if ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY) {
         // fifo is not empty
         uint16_t fifoCnt = AX_Read16(AX_REG_FIFOCOUNT);
@@ -337,6 +351,20 @@ void AX_ReceivePacket(uint8_t* rxPacket) {
             cntRead++;
         } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
         debug("RECEIVED, fifoCnt %u, cntRead %u\n", fifoCnt, cntRead);
+        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+    } //*/
+    
+    if (PrxDataAvailable) {
+        PrxDataAvailable = false;
+        LED1_Toggle();
+        // empty fifo
+        uint16_t cntRead = 0;
+        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+        do {
+            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
+            cntRead++;
+        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
+        debug("RECEIVED cntRead %u\n", cntRead);
         Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
     }
 }
@@ -353,7 +381,6 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     /* enable the oscillator */
     AX_EnableOscillator();
     
-//    AX_Read8(AX_REG_POWSTICKYSTAT); // clear POWSTICKYSTAT register. I think this only needs to be done when using brownout gate interrupts??
     /* Wait for FIFO power ready */
     while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
 
@@ -370,15 +397,23 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     }
 
     /* disable the oscillator */
-//    AX_DisableOscillator();
+    AX_DisableOscillator();
 
     /* Place chip in POWERDOWN mode */
-//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
 
     return returnVal;
 }
 
 // **** MODULE FUNCTION IMPLEMENTATIONS ****
+void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
+    if (GPIO_PinRead(pin) == 1) {
+        uint16_t irqStatus = AX_Read16(AX_REG_IRQREQUEST);
+        if (irqStatus & AX_IRQMFIFONOTEMPTY)
+            PrxDataAvailable = true;
+    }
+}
+
 int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
     if (length > AX_TX_PACKET_MAX_SIZE) {
         debug("tx packet is too large, aborting\n");
@@ -390,15 +425,16 @@ int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
     
     uint8_t fifoBytes[AX_TX_PACKET_MAX_SIZE], cnt = 0;
 
-    /* write preamble 1/2, writing MATCHPAT1 bits */ 
+    /* write preamble MATCHPAT1 bits */ 
     fifoBytes[cnt++] = AX_FIFO_CHUNK_REPEATDATA;
     fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
     fifoBytes[cnt++] = 4; // preamble length of 4 bytes
     fifoBytes[cnt++] = 0x55; // preamble value, sent preamble length times
     
-    /* write preamble 3, writing MATCHPAT0 bits */
-    fifoBytes[cnt++] = 0xA1;//AX_FIFO_CHUNK_DATA;
-    fifoBytes[cnt++] = 0x18;//AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
+    /* write preamble MATCHPAT0 bits */
+    fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA;
+    fifoBytes[cnt++] = 5;
+    fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
     fifoBytes[cnt++] = 0xCC;
     fifoBytes[cnt++] = 0xAA;
     fifoBytes[cnt++] = 0xCC;
@@ -430,13 +466,13 @@ void AX_WriteFifo(uint8_t* buffer, uint8_t length) {
 }
 
 void AX_EnableOscillator(void) {
-    AX_Write8(AX_REG_PINFUNCPWRAMP, 0x07); // 0x~0 for internal oscillator use, 0x~7 to enable TCXO
-    AX_Write8(AX_REG_0xF10, 0x04); // set to 0x04 for TCXO, 0x0D if frequency of TCXO or internal osc is > 43MHz, or 0x03 otherwise
-    AX_Write8(AX_REG_0xF11, 0x00); // set to 0x00 for TCXO, 0x07 if crystal is used
+    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
+    AX_Write8(AX_REG_0xF10, F10_VAL);
+    AX_Write8(AX_REG_0xF11, F11_VAL);
 }
 
 void AX_DisableOscillator(void) {
-    AX_Write8(AX_REG_PINFUNCPWRAMP, 0x00); // what to do to disable? this single line doesn't quite do it
+    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL); // what to do to disable? this single line doesn't quite do it
 }
 
 void AX_WriteLong8(uint16_t reg, uint8_t value) {
