@@ -13,19 +13,13 @@
 
 #include "Encoders.h"
 #include "IMU_HWT901B.h"
-#include "MH_AX.h"
+#include "AX.h"
 #include "NVData.h"
 #include "Print.h"
 #include "SoftPWM.h"
 #include "Time.h"
 
 #include "definitions.h"
-
-#include "ax/ax.h"
-#include "ax/ax_hw.h"
-#include "ax/ax_modes.h"
-#include "ax/ax_reg.h"
-#include "ax/ax_reg_values.h"
 
 #define SW_VERSION 0.1f
 
@@ -36,6 +30,10 @@
 
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
+// **** AX RECEIVER MACRO HERE ****
+//#define AX_RECEIVER
+// ********************************
+
 uint16_t g_adc_count = 0;
 volatile uint8_t curDutyCycle = 0;
 uint8_t preDutyCycle = 0;
@@ -44,7 +42,6 @@ void ADCHS_Callback(ADCHS_CHANNEL_NUM channel, uintptr_t context);
 uint16_t PWM_CompareValueGet(uint8_t curDutyCycle);
 bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t leftSlop, int32_t rightSlop);
 
-#define AX_RECEIVER
 int main(int argc, char** argv) {
     SYS_Initialize(NULL); // inits all peripherals - UART, SPI, TMR, OCMP, etc.
     LED1_Clear();
@@ -79,6 +76,7 @@ int main(int argc, char** argv) {
         SYS_Tasks();
         Print_Task();
         IMU_SampleTask();
+        AX_TransmitTask();
 
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;
@@ -88,13 +86,13 @@ int main(int argc, char** argv) {
             uint8_t temp[10];
             AX_ReceivePacket(temp);
 #else
-            static uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
+            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
             static uint16_t counter = 0;
             counter++;
             packet[3] = (uint8_t) (counter & 0x00FF);
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
-            AX_TransmitPacket(packet, 9);
-            LED1_Toggle();
+            AX_EnqueuePacket(packet, 9);
+//            AX_TransmitPacket(packet, 9);
             
             // how do i tell if i got an ACK??
 #endif        

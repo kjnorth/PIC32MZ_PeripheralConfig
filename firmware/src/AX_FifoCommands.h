@@ -22,13 +22,10 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef AX_FIFO_H
-#define AX_FIFO_H
+#ifndef AX_FIFOCOMMANDS_H
+#define	AX_FIFOCOMMANDS_H
 
-/**
- * See AND9347-D-AX5043 Programming Manual.PDF
- */
-
+// **** GLOBAL MACROS ****
 /**
  * Chunk Sizes
  */
@@ -55,31 +52,6 @@
 #define AX_FIFO_CHUNK_RFFREQOFFS	0x73 /* RF Frequency Offset */
 #define AX_FIFO_CHUNK_DATARATE		0x74 /* Datarate */
 #define AX_FIFO_CHUNK_ANTRSSI3		0x75 /* Antenna Selection RSSI */
-
-typedef struct ax_rx_chunk {
-  uint8_t chunk_t;
-  union {
-    struct {
-      uint8_t flags;
-      uint16_t length;
-      uint8_t data[0x100];
-    } data;
-    int16_t rssi;
-    uint16_t freqoffs;
-    struct {
-      uint8_t rssi;
-      uint8_t bgndnoise;
-    } antrssi2;
-    uint32_t timer;
-    int32_t rffreqoffs;
-    uint32_t datarate;
-    struct {
-      uint8_t ant0rssi;
-      uint8_t ant1rssi;
-      uint8_t bgndnoise;
-    } antrssi3;
-  } chunk;
-} ax_rx_chunk;
 
 /**
  * TXCTRL Command
@@ -112,6 +84,7 @@ typedef struct ax_rx_chunk {
 #define AX_FIFO_RXDATA_RESIDUE	(1 << 2) /* Residue mode on last byte */
 #define AX_FIFO_RXDATA_PKTEND	(1 << 1) /* END flag */
 #define AX_FIFO_RXDATA_PKTSTART	(1 << 0) /* START flag */
+// **** END GLOBAL MACROS ****
 
+#endif	/* AX_FIFOCOMMANDS_H */
 
-#endif  /* AX_FIFO_H */

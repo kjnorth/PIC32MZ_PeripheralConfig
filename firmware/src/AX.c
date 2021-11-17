@@ -11,24 +11,19 @@
 // **** MODULE INCLUDE DIRECTIVES ****
 #include <string.h>
 
-#include "MH_AX.h"
-
-#include "ax/ax_fifo.h"
-#include "ax/ax.h"
-#include "ax/ax_hw.h"
-#include "ax/ax_modes.h"
-#include "ax/ax_reg.h"
-#include "ax/ax_reg_values.h"
-
+#include "AX.h"
+#include "AX_FifoCommands.h"
+#include "AX_PacketQueue.h"
+#include "AX_Registers.h"
+#include "AX_RegisterAPI.h"
+#include "AX_RegisterValues.h"
 #include "Print.h"
-#include "Time.h"
 
 #include "peripheral/gpio/plib_gpio.h"
-#include "peripheral/spi/spi_master/plib_spi1_master.h"
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
-#define _DEBUG
+//#define _DEBUG
 #ifdef _DEBUG
 #define debug Print_EnqueueMsg
 #else
@@ -45,40 +40,33 @@
 // **** END MODULE MACROS ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
-
+typedef enum {
+    POWERDOWN_IDLE = 0,
+    WAIT_POWER_AND_XTAL,
+    WAIT_TX_COMPLETE,
+} ax_tx_state_t;
 // **** END MODULE TYPEDEFS ****
 // -----------------------------------------------------------------------------
 // **** MODULE GLOBAL VARIABLES ****
 ax_mode_t Mode = AX_MODE_NONE;
-uint16_t AXStatus = 0;
 uint8_t PllRangingA = 0;
 uint8_t ChannelVcoi = 0; // access this variable when ax crazy library calls axradio_get_pllvcoi function
-bool PrxDataAvailable = false;
+volatile ax_tx_state_t PtxState = POWERDOWN_IDLE;
+volatile bool PtxXtalReady = false;
+volatile bool PtxTxComplete = false;
+volatile bool PrxDataAvailable = false;
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
+// interface with chip
+void AX_EnableOscillator(void);
+void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length);
+
+// IRQ handlers
+void AX_PTX_IRQ_Handler(GPIO_PIN pin, uintptr_t context);
 void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context);
 
-uint8_t AX_InitRegistersCommon(void);
-
-int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length);
-void AX_WriteFifo(uint8_t* buffer, uint8_t length);
-
-void AX_EnableOscillator(void);
-void AX_DisableOscillator(void);
-
-void AX_Write8(uint16_t reg, uint8_t value);
-void AX_Write16(uint16_t reg, uint16_t value);
-void AX_Write24(uint16_t reg, uint32_t value);
-void AX_Write32(uint16_t reg, uint32_t value);
-
-uint8_t AX_Read8(uint16_t reg);
-uint16_t AX_Read16(uint16_t reg);
-uint32_t AX_Read24(uint16_t reg);
-uint32_t AX_Read32(uint16_t reg);
-
-void AX_SPI_Transfer(unsigned char* data, uint8_t length);
-
+// chip calibration / tuning
 uint8_t AX_AdjustVcoi(uint8_t rng);
 int16_t AX_TuneVoltage(void);
 // **** END MODULE FUNCTION PROTOTYPES ****
@@ -143,7 +131,16 @@ bool AX_Init(ax_mode_t _mode) {
     
     if (Mode == AX_MODE_PRX) {
         AX_InitRxRegisters();
+        GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_PRX_IRQ_Handler, (uintptr_t) NULL);
+    } else if (Mode == AX_MODE_PTX) {
+        GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_PTX_IRQ_Handler, (uintptr_t) NULL);
     }
+
+    /* enable interrupt on the chip's IRQ pin*/
+    GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
+    
+    /* init the tx packet queue */
+    AX_PacketQueue_Init();
     
     return true;
 }
@@ -158,7 +155,7 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_PINFUNCSYSCLK, 0x04); // set to output frequency of oscillator used (either internal or TCXO)
     AX_Write8(AX_REG_PINFUNCDCLK, 0x00); // set to output '0'
     AX_Write8(AX_REG_PINFUNCDATA, 0x00); // set to output '0'
-    AX_Write8(AX_REG_PINFUNCIRQ, 0x00); // 0x~0 to output '0', 0x~3 to enable IRQ
+    AX_Write8(AX_REG_PINFUNCIRQ, 0x03); // 0x00 to output '0', 0x03 to enable IRQ; no inversion, no pullup
     AX_Write8(AX_REG_PINFUNCANTSEL, 0x00); // set to output '0'
     AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
     AX_Write16(AX_REG_FIFOTHRESH, 0x0000);
@@ -263,12 +260,26 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_0xF23, 0x84);
     AX_Write8(AX_REG_0xF26, 0x98);
     AX_Write8(AX_REG_0xF34, 0x08);
-    AX_Write8(AX_REG_0xF35, F35_VAL); /* 0x11 from AX RadioLab*/
+    AX_Write8(AX_REG_0xF35, F35_VAL);
     AX_Write8(AX_REG_0xF44, 0x25);
 }
 
+uint8_t AX_InitCommonRegisters(void) {
+    uint8_t rng = PllRangingA;
+    if (rng & 0x20)
+        return 0x06; // AXRADIO_ERR_RANGING;
+    if (AX_Read8(AX_REG_PLLLOOP) & 0x80)
+        AX_Write8(AX_REG_PLLRANGINGB, (rng & 0x0F));
+    else
+        AX_Write8(AX_REG_PLLRANGINGA, (rng & 0x0F));
+    rng = ChannelVcoi;
+    if (rng & 0x80)
+        AX_Write8(AX_REG_PLLVCOI, rng);
+    return 0x00; // AXRADIO_ERR_NOERROR;
+}
+
 void AX_InitTxRegisters(void) {
-    AX_InitRegistersCommon();
+    AX_InitCommonRegisters();
     AX_Write8(AX_REG_PLLLOOP, 0x07);
     AX_Write8(AX_REG_PLLCPI, 0x12);
     AX_Write8(AX_REG_PLLVCODIV, PLLVCODIV_VAL);
@@ -278,7 +289,7 @@ void AX_InitTxRegisters(void) {
 }
 
 void AX_InitRxRegisters(void) {
-    AX_InitRegistersCommon();
+    AX_InitCommonRegisters();
     AX_Write8(AX_REG_PLLLOOP, 0x07);
     AX_Write8(AX_REG_PLLCPI, 0x08);
     AX_Write8(AX_REG_PLLVCODIV, XTALCAP_VAL);
@@ -297,63 +308,118 @@ void AX_InitRxRegisters(void) {
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS); // clear FIFO
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLRX);
     
-    // TODO: enable FIFO not empty interrupt once those are used
-    AX_Write8(AX_REG_PINFUNCIRQ, 0x03); // 0x00 to output '0', 0x03 to enable IRQ; no inversion, no pullup
     AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY);
-    GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_PRX_IRQ_Handler, (uintptr_t) NULL);
-    GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
     
     AX_EnableOscillator();
 }
 
-uint8_t AX_InitRegistersCommon(void) {
-    uint8_t rng = PllRangingA;
-    if (rng & 0x20)
-        return 0x06; // AXRADIO_ERR_RANGING;
-    if (AX_Read8(AX_REG_PLLLOOP) & 0x80)
-        AX_Write8(AX_REG_PLLRANGINGB, (rng & 0x0F));
-    else
-        AX_Write8(AX_REG_PLLRANGINGA, (rng & 0x0F));
-    rng = ChannelVcoi;
-    if (rng & 0x80)
-        AX_Write8(AX_REG_PLLVCOI, rng);
-    return 0x00; // AXRADIO_ERR_NOERROR;
+/* interrupt driven transmit */
+void AX_TransmitTask(void) {
+    switch (PtxState) {
+        case POWERDOWN_IDLE:
+            if (!AX_IsQueueEmpty()) {
+                /* Clear FIFO */
+                AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+
+                /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
+                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
+
+                /* enable the oscillator */
+                AX_EnableOscillator();
+
+                PtxState = WAIT_POWER_AND_XTAL;
+
+                /* Enable crystal oscillator interrupt */
+                AX_Write16(AX_REG_IRQMASK, (AX_IRQMXTALREADY));
+            }
+            break;
+        case WAIT_POWER_AND_XTAL:
+            if (PtxXtalReady) {
+                /* clear crystal oscillator interrupt mask */
+                AX_Write16(AX_REG_IRQMASK, 0x00);
+
+                /* write and commit packet to the FIFO */
+                uint8_t* pTxPacket = NULL, length = 0;
+                AX_DequeuePacket(&pTxPacket, &length);
+                if (pTxPacket) {
+                    AX_WritePacketToFifo(pTxPacket, length);
+                    PtxState = WAIT_TX_COMPLETE;
+                } else {
+                    // error
+                }
+
+                /* make sure bits in RADIOEVENTREQ are cleared */
+                AX_Read8(AX_REG_RADIOEVENTREQ0);
+                /* enable Tx complete interrupt */
+                AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMDONE);
+                AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
+
+                /* commit packet to the FIFO for tx */
+                AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
+            }
+            break;
+        case WAIT_TX_COMPLETE:
+            if (PtxTxComplete) {
+                /* clear Tx done interrupt masks */
+                AX_Read8(AX_REG_RADIOEVENTREQ0);
+                AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
+                AX_Write16(AX_REG_IRQMASK, 0x00);
+
+                /* Place chip in POWERDOWN mode */
+                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+                PtxXtalReady = false;
+                PtxTxComplete = false;
+
+                PtxState = POWERDOWN_IDLE;
+
+                LED1_Toggle();
+            }
+            break;
+    }
 }
 
-uint16_t AX_GetStatus(void) {
-    return AXStatus;
-}
+/* blocking transmit */
+int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
+    uint8_t returnVal = 0;
 
-void AX_PrintStatus(void) {
-    uint16_t status = AXStatus;
-    uint8_t fifoStat = AX_Read8(AX_REG_FIFOSTAT);
-    Print_EnqueueMsg("hwStatus - %u%u%u%u %u%u%u%u %u%u%u%u %u%u%u%u, fifoStatus - %u%u%u%u %u%u%u%u\n",
-            ((status & (1 << 15)) >> 15), ((status & (1 << 14)) >> 14), ((status & (1 << 13)) >> 13), ((status & (1 << 12)) >> 12),
-            ((status & (1 << 11)) >> 11), ((status & (1 << 10)) >> 10), ((status & (1 << 9)) >> 9),   ((status & (1 << 8)) >> 8),
-            ((status & (1 << 7)) >> 7),   ((status & (1 << 6)) >> 6),   ((status & (1 << 5)) >> 5),   ((status & (1 << 4)) >> 4),
-            ((status & (1 << 3)) >> 3),   ((status & (1 << 2)) >> 2),   ((status & (1 << 1)) >> 1),   ((status & (1 << 0)) >> 0),
-            ((fifoStat & (1 << 7)) >> 7), ((fifoStat & (1 << 6)) >> 6), ((fifoStat & (1 << 5)) >> 5), ((fifoStat & (1 << 4)) >> 4),
-            ((fifoStat & (1 << 3)) >> 3), ((fifoStat & (1 << 2)) >> 2), ((fifoStat & (1 << 1)) >> 1), ((fifoStat & (1 << 0)) >> 0));
+    /* Clear FIFO */
+    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+
+    /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
+
+    /* enable the oscillator */
+    AX_EnableOscillator();
+
+    /* Wait for FIFO power ready */
+    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
+
+    /* write preamble and packet to FIFO */
+    AX_WritePacketToFifo(txPacket, length);
+    /* Wait for oscillator to start running  */
+    // block for now, can config to be interrupt driven later
+    while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
+
+    /* commit packet to the FIFO for tx */
+    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
+
+    /* wait for tx to complete */
+    // block for now, can config to be interrupt driven later
+    while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
+    returnVal = 1;
+
+    /* disable the TCXO if used */
+    // TODO
+    
+    /* Place chip in POWERDOWN mode */
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+
+    LED1_Toggle();
+
+    return returnVal;
 }
 
 void AX_ReceivePacket(uint8_t* rxPacket) {
-    /*
-    if ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY) {
-        // fifo is not empty
-        uint16_t fifoCnt = AX_Read16(AX_REG_FIFOCOUNT);
-        LED1_Toggle();
-
-        // empty fifo
-        uint16_t cntRead = 0;
-        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
-        do {
-            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
-            cntRead++;
-        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
-        debug("RECEIVED, fifoCnt %u, cntRead %u\n", fifoCnt, cntRead);
-        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
-    } //*/
-    
     if (PrxDataAvailable) {
         PrxDataAvailable = false;
         LED1_Toggle();
@@ -364,66 +430,19 @@ void AX_ReceivePacket(uint8_t* rxPacket) {
             buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
             cntRead++;
         } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
-        debug("RECEIVED cntRead %u\n", cntRead);
         Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
     }
 }
 
-int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
-    uint8_t returnVal = 0;
-    
-    /* Clear FIFO */
-    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
-
-    /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
-
-    /* enable the oscillator */
-    AX_EnableOscillator();
-    
-    /* Wait for FIFO power ready */
-    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
-
-    /* write preamble and packet to FIFO */
-    if (AX_WritePacketToFifo(txPacket, length)) {
-        /* Wait for oscillator to start running  */
-        // block for now, can config to be interrupt driven later
-        while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
-        
-        /* wait for tx to complete */
-        // block for now, can config to be interrupt driven later
-        while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
-        returnVal = 1;
-    }
-
-    /* disable the oscillator */
-    AX_DisableOscillator();
-
-    /* Place chip in POWERDOWN mode */
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-
-    return returnVal;
-}
-
 // **** MODULE FUNCTION IMPLEMENTATIONS ****
-void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
-    if (GPIO_PinRead(pin) == 1) {
-        uint16_t irqStatus = AX_Read16(AX_REG_IRQREQUEST);
-        if (irqStatus & AX_IRQMFIFONOTEMPTY)
-            PrxDataAvailable = true;
-    }
+void AX_EnableOscillator(void) {
+    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
+    AX_Write8(AX_REG_0xF10, F10_VAL);
+    AX_Write8(AX_REG_0xF11, F11_VAL);
 }
 
-int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
-    if (length > AX_TX_PACKET_MAX_SIZE) {
-        debug("tx packet is too large, aborting\n");
-        return 0;
-    }
-        
-    /* disable Rx interrupts */
-    // TODO
-    
-    uint8_t fifoBytes[AX_TX_PACKET_MAX_SIZE], cnt = 0;
+void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) { 
+    uint8_t fifoBytes[AX_FIFO_MAX_SIZE] = {0}, cnt = 0;
 
     /* write preamble MATCHPAT1 bits */ 
     fifoBytes[cnt++] = AX_FIFO_CHUNK_REPEATDATA;
@@ -433,7 +452,7 @@ int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
     
     /* write preamble MATCHPAT0 bits */
     fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA;
-    fifoBytes[cnt++] = 5;
+    fifoBytes[cnt++] = 5; // preamble length of 4 bytes + fifo command flag byte
     fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
     fifoBytes[cnt++] = 0xCC;
     fifoBytes[cnt++] = 0xAA;
@@ -447,287 +466,29 @@ int AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
     
     memcpy(fifoBytes+cnt, txPacket, length);
     AX_WriteFifo(fifoBytes, cnt+length);
-
-    /* commit packet to the FIFO for tx */
-    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
-    
-    /* enable Tx interrupts */
-    // TODO
-
-    return 1;
 }
 
-void AX_WriteFifo(uint8_t* buffer, uint8_t length) {
-    // One SPI transaction for each byte in the buffer, as per easyax example code
-    uint8_t i;
-    for (i = 0; i < length; i++) {
-        AX_Write8(AX_REG_FIFODATA, buffer[i]);
+void AX_PTX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
+    if (GPIO_PinRead(pin) == 1) {
+        switch (PtxState) {
+            case POWERDOWN_IDLE:
+                break;
+            case WAIT_POWER_AND_XTAL:
+                PtxXtalReady = true;
+                break;
+            case WAIT_TX_COMPLETE:
+                PtxTxComplete = true;
+                break;
+        }
     }
 }
 
-void AX_EnableOscillator(void) {
-    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
-    AX_Write8(AX_REG_0xF10, F10_VAL);
-    AX_Write8(AX_REG_0xF11, F11_VAL);
-}
-
-void AX_DisableOscillator(void) {
-    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL); // what to do to disable? this single line doesn't quite do it
-}
-
-void AX_WriteLong8(uint16_t reg, uint8_t value) {
-    uint8_t buf[3];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0xF0); // set top four bits for write operation and to follow along with programming manual protocol
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = value;
-    AX_SPI_Transfer(buf, 3);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-}
-
-void AX_Write8(uint16_t reg, uint8_t value) {
-    if (reg > 0x0070) { /* long access */
-        AX_WriteLong8(reg, value);
-    } else { /* short access */
-        uint8_t buf[2];
-
-        buf[0] = (((uint8_t) (reg & 0x007F)) | 0x80); // set MSB to indicate write operation on MOSI
-        buf[1] = value;
-        AX_SPI_Transfer(buf, 2);
-
-        AXStatus = ((uint16_t) (buf[0] << 8));
+void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
+    if (GPIO_PinRead(pin) == 1) {
+        uint16_t irqStatus = AX_Read16(AX_REG_IRQREQUEST);
+        if (irqStatus & AX_IRQMFIFONOTEMPTY)
+            PrxDataAvailable = true;
     }
-}
-
-void AX_WriteLong16(uint16_t reg, uint16_t value) {
-    uint8_t buf[4];
-    
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0xF0); // set top four bits for write operation and to follow along with programming manual protocol
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = (uint8_t) (value >> 8);
-    buf[3] = (uint8_t) (value >> 0);
-    AX_SPI_Transfer(buf, 4);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-}
-
-void AX_Write16(uint16_t reg, uint16_t value) {
-    if (reg > 0x0070) { /* long access */
-        AX_WriteLong16(reg, value);
-    } else { /* short access */
-        uint8_t buf[3];
-        
-        buf[0] = (((uint8_t) (reg & 0x007F)) | 0x80); // set MSB to indicate write operation on MOSI
-        buf[1] = (uint8_t) (value >> 8);
-        buf[2] = (uint8_t) (value >> 0);
-        AX_SPI_Transfer(buf, 3);
-        
-        AXStatus = ((uint16_t) (buf[0] << 8));
-    }
-}
-
-void AX_WriteLong24(uint16_t reg, uint32_t value) {
-    uint8_t buf[5];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0xF0); // set top four bits for write operation and to follow along with programming manual protocol
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = (uint8_t) (value >> 16);
-    buf[3] = (uint8_t) (value >> 8);
-    buf[4] = (uint8_t) (value >> 0);
-    AX_SPI_Transfer(buf, 5);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-}
-
-void AX_Write24(uint16_t reg, uint32_t value) {
-    if (reg > 0x0070) { /* long access */
-        AX_WriteLong24(reg, value);
-    } else { /* short access */
-        uint8_t buf[4];
-
-        buf[0] = (((uint8_t) (reg & 0x007F)) | 0x80); // set MSB to indicate write operation on MOSI
-        buf[1] = (uint8_t) (value >> 16);
-        buf[2] = (uint8_t) (value >> 8);
-        buf[3] = (uint8_t) (value >> 0);
-        AX_SPI_Transfer(buf, 4);
-
-        AXStatus = ((uint16_t) (buf[0] << 8));
-    }
-}
-
-void AX_WriteLong32(uint16_t reg, uint32_t value) {
-    uint8_t buf[6];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0xF0); // set top four bits for write operation and to follow along with programming manual protocol
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = (uint8_t) (value >> 24);
-    buf[3] = (uint8_t) (value >> 16);
-    buf[4] = (uint8_t) (value >> 8);
-    buf[5] = (uint8_t) (value >> 0);
-    AX_SPI_Transfer(buf, 6);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-}
-
-void AX_Write32(uint16_t reg, uint32_t value) {
-    if (reg > 0x0070) { /* long access */
-        AX_WriteLong32(reg, value);
-    } else { /* short access */
-        uint8_t buf[5];
-
-        buf[0] = (((uint8_t) (reg & 0x007F)) | 0x80); // set MSB to indicate write operation on MOSI
-        buf[1] = (uint8_t) (value >> 24);
-        buf[2] = (uint8_t) (value >> 16);
-        buf[3] = (uint8_t) (value >> 8);
-        buf[4] = (uint8_t) (value >> 0);
-        AX_SPI_Transfer(buf, 5);
-
-        AXStatus = ((uint16_t) (buf[0] << 8));
-    }
-}
-
-uint8_t AX_ReadLong8(uint16_t reg) {
-    uint8_t buf[3];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0x70);
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = 0xFF;
-    AX_SPI_Transfer(buf, 3);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-    return buf[2];
-}
-
-uint8_t AX_Read8(uint16_t reg) {
-    uint8_t returnVal = 0;
-    if (reg > 0x70) { /* long access */
-        returnVal = AX_ReadLong8(reg);
-    } else { /* short access */
-        uint8_t buf[2];
-
-        buf[0] = (uint8_t) (reg & 0x007F);
-        buf[1] = 0xFF;
-        AX_SPI_Transfer(buf, 2);
-
-        AXStatus = ((uint16_t) buf[0] << 8);
-        returnVal = buf[1];
-    }
-    return returnVal;
-}
-
-uint16_t AX_ReadLong16(uint16_t reg) {
-    uint8_t buf[4];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0x0070);
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = 0xFF;
-    buf[3] = 0xFF;
-    AX_SPI_Transfer(buf, 4);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-    return (uint16_t) (buf[2] << 8) | (buf[3] << 0);
-}
-
-uint16_t AX_Read16(uint16_t reg) {
-    uint16_t returnVal = 0;
-
-    if (reg > 0x70) { /* long access */
-        returnVal = AX_ReadLong16(reg);
-    } else { /* short access */
-        uint8_t buf[3];
-
-        buf[0] = (reg & 0x7F);
-        buf[1] = 0xFF;
-        buf[2] = 0xFF;
-        AX_SPI_Transfer(buf, 3);
-
-        AXStatus = ((uint16_t) buf[0] << 8);
-        returnVal = (uint16_t) (buf[1] << 8) | (buf[2] << 0);
-    }
-    return returnVal;
-}
-
-uint32_t AX_ReadLong24(uint16_t reg) {
-    uint8_t buf[5];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0x0070);
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = 0xFF;
-    buf[3] = 0xFF;
-    buf[4] = 0xFF;
-    AX_SPI_Transfer(buf, 5);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-    return (uint32_t) (buf[2] << 16) | (buf[3] << 8) | (buf[4] << 0);
-}
-
-uint32_t AX_Read24(uint16_t reg) {
-    uint32_t returnVal = 0;
-
-    if (reg > 0x70) { /* long access */
-        returnVal = AX_ReadLong24(reg);
-    } else { /* short access */
-        uint8_t buf[4];
-
-        buf[0] = (reg & 0x7F);
-        buf[1] = 0xFF;
-        buf[2] = 0xFF;
-        buf[3] = 0xFF;
-        AX_SPI_Transfer(buf, 4);
-
-        AXStatus = ((uint16_t) buf[0] << 8);
-        returnVal = (uint32_t) (buf[1] << 16) | (buf[2] << 8) | (buf[3] << 0);
-    }
-    return returnVal;
-}
-
-uint32_t AX_ReadLong32(uint16_t reg) {
-    uint8_t buf[6];
-
-    buf[0] = (((uint8_t) (reg >> 8) & 0x007F) | 0x0070);
-    buf[1] = (uint8_t) (reg & 0x00FF);
-    buf[2] = 0xFF;
-    buf[3] = 0xFF;
-    buf[4] = 0xFF;
-    buf[5] = 0xFF;
-    AX_SPI_Transfer(buf, 6);
-
-    AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
-    return (uint32_t) (buf[2] << 24) | (buf[3] << 16) | (buf[4] << 8) | (buf[5] << 0);
-}
-
-uint32_t AX_Read32(uint16_t reg) {
-    uint32_t returnVal = 0;
-
-    if (reg > 0x70) { /* long access */
-        returnVal = AX_ReadLong32(reg);
-    } else { /* short access */
-        uint8_t buf[5];
-
-        buf[0] = (reg & 0x7F);
-        buf[1] = 0xFF;
-        buf[2] = 0xFF;
-        buf[3] = 0xFF;
-        buf[4] = 0xFF;
-        AX_SPI_Transfer(buf, 5);
-
-        AXStatus = ((uint16_t) buf[0] << 8);
-        returnVal = (uint32_t) (buf[1] << 24) | (buf[2] << 16) | (buf[3] << 8) | (buf[4] << 0);
-    }
-    return returnVal;
-}
-
-bool IsSPIBusy(void) {
-    // return true if the SPI SS line is active (LOW)
-    return (SPI1_SS_Get() == false);
-}
-
-void AX_SPI_Transfer(unsigned char* data, uint8_t length) {
-    static unsigned char dataToReceive[256];
-    SPI1_WriteRead(data, length, dataToReceive, length);
-    memcpy(data, dataToReceive, length);
-    while (IsSPIBusy()) {};
 }
 
 // ported over from ax radio's crazy library.

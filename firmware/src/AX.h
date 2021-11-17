@@ -14,8 +14,8 @@
  * Created on October 28, 2021, 1:07 PM
  */
 
-#ifndef MH_AX_H
-#define	MH_AX_H
+#ifndef AX_H
+#define	AX_H
 
 // **** GLOBAL INCLUDE DIRECTIVES ****
 #include <stdbool.h>
@@ -23,7 +23,7 @@
 // **** END GLOBAL INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
-#define AX_TX_PACKET_MAX_SIZE (200u)
+// see AX_PacketQueue.h for max packet size and max queue size
 #define AX_FIFO_MAX_SIZE (256u)
 // **** END GLOBAL MACROS ****
 
@@ -34,8 +34,8 @@ extern "C" {
     // **** GLOBAL TYPEDEFS ****
     typedef enum {
         AX_MODE_NONE = 0,
-        AX_MODE_PTX,
-        AX_MODE_PRX,
+        AX_MODE_PTX, // primary transmitter
+        AX_MODE_PRX, // primary receiver
     } ax_mode_t;
     // **** END GLOBAL TYPEDEFS ****
     // -------------------------------------------------------------------------
@@ -49,16 +49,16 @@ extern "C" {
     void AX_InitTxRegisters(void);
     void AX_InitRxRegisters(void);
     
-    uint16_t AX_GetStatus(void);
-    void AX_PrintStatus(void);
+    void AX_TransmitTask(void);
+    int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
     
     void AX_ReceivePacket(uint8_t* rxPacket);
-    int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
+    
+    extern bool AX_EnqueuePacket(uint8_t* txPacket, uint8_t length);
     // **** END GLOBAL FUNCTION PROTOTYPES ****
     // -------------------------------------------------------------------------
 #ifdef	__cplusplus
 }
 #endif
 
-#endif	/* MH_AX_H */
-
+#endif	/* AX_H */

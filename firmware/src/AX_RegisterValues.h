@@ -22,10 +22,10 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * See AND9347-D-AX5043 Programming Manual.PDF
- */
+#ifndef AX_REGISTERVALUES_H
+#define	AX_REGISTERVALUES_H
 
+// **** GLOBAL MACROS ****
 /**
  * Status field
  */
@@ -84,6 +84,18 @@
 #define AX_POWSTAT_SVREF	(1 << 5) /* Reference Voltage Regulator Ready */
 #define AX_POWSTAT_SREF		(1 << 6) /* Reference Ready */
 #define AX_POWSTAT_SSUM		(1 << 7) /* Summary Ready Status */
+
+/**
+ * Power Interrupts
+ */
+#define AX_POWIRQ_MSVIO         (1 << 0)
+#define AX_POWIRQ_MSBEVMODEM    (1 << 1)
+#define AX_POWIRQ_MSBEVANA      (1 << 2)
+#define AX_POWIRQ_MSVMODEM      (1 << 3)
+#define AX_POWIRQ_MSVANA        (1 << 4)
+#define AX_POWIRQ_MSVREF        (1 << 5)
+#define AX_POWIRQ_MSREF         (1 << 6)
+#define AX_POWIRQ_MPWRGOOD      (1 << 7)
 
 /**
  * Interrupt Control
@@ -445,3 +457,6 @@
 #define AX_DEC_CLKX2			(1 << 6)
 #define AX_DAC_MODE_DELTA_SIGMA	(0 << 7)
 #define AX_DAC_MODE_PWM			(1 << 7)
+// **** END GLOBAL MACROS ****
+
+#endif	/* AX_REGISTERVALUES_H */

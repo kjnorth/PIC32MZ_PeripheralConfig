@@ -22,12 +22,10 @@
  * WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
-/**
- * See AND9347-D-AX5043 Programming Manual.PDF
- */
+#ifndef AX_REGISTERS_H
+#define	AX_REGISTERS_H
 
-//typedef uint16_t ax_reg_address_t
-
+// **** GLOBAL MACROS ****
 #define AX_REG_SILICONREVISION	0x000	/* Silicon Revision */
 #define AX_REG_SCRATCH			0x001	/* Scratch */
 #define AX_REG_PWRMODE			0x002	/* Power Mode */
@@ -47,6 +45,12 @@
 #define AX_REG_IRQINVERSION		0x00A	/* IRQ Inversion */
 #define AX_REG_IRQREQUEST		0x00C	/* IRQ Request */
 #define AX_REG_RADIOEVENTREQ	0x00E	/* Radio Event Request */
+
+#define AX_REG_RADIOEVENTMASK1	0x008
+#define AX_REG_RADIOEVENTMASK0	0x009
+
+#define AX_REG_RADIOEVENTREQ1	0x00E
+#define AX_REG_RADIOEVENTREQ0	0x00F
 
 /**
  * Modulation & Framing
@@ -307,3 +311,6 @@
 #define AX_REG_0xF35            0xF35
 #define AX_REG_0xF44            0xF44
 #define AX_REG_0xF72            0xF72
+// **** END GLOBAL MACROS ****
+
+#endif	/* AX_REGISTERS_H */

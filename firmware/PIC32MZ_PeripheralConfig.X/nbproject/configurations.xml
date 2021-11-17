@@ -4,15 +4,6 @@
     <logicalFolder name="HeaderFiles"
                    displayName="Header Files"
                    projectFiles="true">
-      <logicalFolder name="f2" displayName="ax" projectFiles="true">
-        <itemPath>../src/ax/ax.h</itemPath>
-        <itemPath>../src/ax/ax_fifo.h</itemPath>
-        <itemPath>../src/ax/ax_hw.h</itemPath>
-        <itemPath>../src/ax/ax_modes.h</itemPath>
-        <itemPath>../src/ax/ax_params.h</itemPath>
-        <itemPath>../src/ax/ax_reg.h</itemPath>
-        <itemPath>../src/ax/ax_reg_values.h</itemPath>
-      </logicalFolder>
       <logicalFolder name="f1" displayName="config" projectFiles="true">
         <logicalFolder name="f1" displayName="default" projectFiles="true">
           <logicalFolder name="f1" displayName="peripheral" projectFiles="true">
@@ -72,7 +63,12 @@
       <itemPath>../src/IMU_HWT901B.h</itemPath>
       <itemPath>../src/UART_Common.h</itemPath>
       <itemPath>../src/RF_AX5243.h</itemPath>
-      <itemPath>../src/MH_AX.h</itemPath>
+      <itemPath>../src/AX_PacketQueue.h</itemPath>
+      <itemPath>../src/AX_Registers.h</itemPath>
+      <itemPath>../src/AX_RegisterValues.h</itemPath>
+      <itemPath>../src/AX_FifoCommands.h</itemPath>
+      <itemPath>../src/AX_RegisterAPI.h</itemPath>
+      <itemPath>../src/AX.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -86,12 +82,6 @@
     <logicalFolder name="SourceFiles"
                    displayName="Source Files"
                    projectFiles="true">
-      <logicalFolder name="f2" displayName="ax" projectFiles="true">
-        <itemPath>../src/ax/ax.c</itemPath>
-        <itemPath>../src/ax/ax_hw.c</itemPath>
-        <itemPath>../src/ax/ax_modes.c</itemPath>
-        <itemPath>../src/ax/ax_params.c</itemPath>
-      </logicalFolder>
       <logicalFolder name="f1" displayName="config" projectFiles="true">
         <logicalFolder name="f1" displayName="default" projectFiles="true">
           <logicalFolder name="f1" displayName="peripheral" projectFiles="true">
@@ -146,7 +136,9 @@
       <itemPath>../src/NVData.c</itemPath>
       <itemPath>../src/SoftPWM.c</itemPath>
       <itemPath>../src/IMU_HWT901B.c</itemPath>
-      <itemPath>../src/MH_AX.c</itemPath>
+      <itemPath>../src/AX_PacketQueue.c</itemPath>
+      <itemPath>../src/AX.c</itemPath>
+      <itemPath>../src/AX_RegisterAPI.c</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
@@ -235,7 +227,7 @@
         <property key="place-data-into-section" value="false"/>
         <property key="post-instruction-scheduling" value="default"/>
         <property key="pre-instruction-scheduling" value="default"/>
-        <property key="preprocessor-macros" value="_AX_TX_SE"/>
+        <property key="preprocessor-macros" value=""/>
         <property key="strict-ansi" value="false"/>
         <property key="support-ansi" value="false"/>
         <property key="toplevel-reordering" value=""/>
