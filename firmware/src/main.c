@@ -31,7 +31,7 @@
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
 // **** AX RECEIVER MACRO HERE ****
-//#define AX_RECEIVER
+#define AX_RECEIVER
 // ********************************
 
 uint16_t g_adc_count = 0;
@@ -57,13 +57,10 @@ int main(int argc, char** argv) {
     Print_EnqueueMsg("Hello Arduino from the PIC32.\n");
 
     ax_mode_t mode;
-    uint16_t checkTimeMs;
 #ifdef AX_RECEIVER    
     mode = AX_MODE_PRX;
-    checkTimeMs = 5;
 #else
     mode = AX_MODE_PTX;
-    checkTimeMs = 5000;
 #endif
     if (AX_Init(mode)) {
         Print_EnqueueMsg("ax init okay\n");
@@ -76,16 +73,15 @@ int main(int argc, char** argv) {
         SYS_Tasks();
         Print_Task();
         IMU_SampleTask();
-        AX_TransmitTask();
+        AX_CommTask();
+        
+#if defined(AX_RECEIVER)
 
+#else
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;
-        if (ct - pt >= checkTimeMs) {
+        if (ct - pt >= 5000) {
             pt = ct;
-#ifdef AX_RECEIVER
-            uint8_t temp[10];
-            AX_ReceivePacket(temp);
-#else
             uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
             static uint16_t counter = 0;
             counter++;
@@ -93,10 +89,8 @@ int main(int argc, char** argv) {
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
             AX_EnqueuePacket(packet, 9);
 //            AX_TransmitPacket(packet, 9);
-            
-            // how do i tell if i got an ACK??
-#endif        
         }
+#endif        
     }
 
     return (EXIT_SUCCESS);

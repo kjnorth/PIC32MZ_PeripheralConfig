@@ -14,11 +14,12 @@
 // **** GLOBAL INCLUDE DIRECTIVES ****
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "AX_Config.h"
 // **** END GLOBAL INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
-#define AX_MAX_ENQUEUED_PACKETS (5u)
-#define AX_PACKET_MAX_SIZE (200u)
+
 // **** END GLOBAL MACROS ****
 
 #ifdef	__cplusplus

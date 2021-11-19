@@ -20,11 +20,12 @@
 // **** GLOBAL INCLUDE DIRECTIVES ****
 #include <stdbool.h>
 #include <stdint.h>
+
+#include "AX_Config.h"
 // **** END GLOBAL INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
-// see AX_PacketQueue.h for max packet size and max queue size
-#define AX_FIFO_MAX_SIZE (256u)
+
 // **** END GLOBAL MACROS ****
 
 #ifdef	__cplusplus
@@ -45,14 +46,12 @@ extern "C" {
     // -------------------------------------------------------------------------
     // **** GLOBAL FUNCTION PROTOTYPES ****
     bool AX_Init(ax_mode_t _mode);
-    void AX_InitConfigRegisters(void);
-    void AX_InitTxRegisters(void);
-    void AX_InitRxRegisters(void);
+//    void AX_InitConfigRegisters(void);
+//    void AX_InitTxRegisters(void);
+//    void AX_InitRxRegisters(void);
     
-    void AX_TransmitTask(void);
+    void AX_CommTask(void);
     int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
-    
-    void AX_ReceivePacket(uint8_t* rxPacket);
     
     extern bool AX_EnqueuePacket(uint8_t* txPacket, uint8_t length);
     // **** END GLOBAL FUNCTION PROTOTYPES ****

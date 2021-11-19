@@ -20,7 +20,7 @@
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
 typedef struct {
-    uint8_t packetQueue[AX_MAX_ENQUEUED_PACKETS][AX_PACKET_MAX_SIZE];
+    uint8_t packetQueue[AX_MAX_ENQUEUED_PACKETS][AX_FIFO_MAX_SIZE];
     uint8_t packetSize[AX_MAX_ENQUEUED_PACKETS]; // holds the length of each packet at the corresponding index
     uint8_t index; // current index in the packetQueue
     uint8_t size; // number of packets enqueued
@@ -43,7 +43,7 @@ void AX_PacketQueue_Init(void) {
 
 bool AX_EnqueuePacket(uint8_t* txPacket, uint8_t length) {
     bool returnVal = false;
-    if ((length <= AX_PACKET_MAX_SIZE) && !AX_IsQueueFull()) {
+    if ((length <= AX_FIFO_MAX_SIZE) && !AX_IsQueueFull()) {
         // copy the message into the queue
         uint8_t packetToAddIndex = TxQueue.index + TxQueue.size;
         if (packetToAddIndex >= AX_MAX_ENQUEUED_PACKETS) {

@@ -4,6 +4,9 @@
  * 
  * Description: Masterhaul's implementation of a library to interface with
  * OnSemiconductor's cumbersome AX-5043/5243 transceivers
+ * 
+ * Initialize one module as a Primary Transmitter (PTX), and the other as a
+ * Primary Receiver (PRX).
  *
  * Created on October 28, 2021, 1:13 PM
  */
@@ -20,6 +23,7 @@
 #include "Print.h"
 
 #include "peripheral/gpio/plib_gpio.h"
+#include "Time.h"
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
@@ -29,32 +33,47 @@
 #else
 #define debug(...)
 #endif
-
-// settings to switch between internal oscillator or TCXO
-#define PINFUNCPWRAMP_VAL (0x07u) // 0x~7 to enable TCXO, 0x~0 for internal oscillator use
-#define XTALCAP_VAL (0x00) // 0x00 for TCXO, some other value for crystal
-#define PLLVCODIV_VAL (0x21u) // set to 0x20 if Fxtal is less than 24.8MHz, or 0x21 otherwise
-#define F10_VAL (0x0Du) // set to 0x04 for TCXO, 0x0D if frequency of TCXO or internal osc is > 43MHz, or 0x03 otherwise
-#define F11_VAL (0x00u) // set to 0x00 for TCXO, 0x07 if crystal is used
-#define F35_VAL (0x11u) // set to 0x10 if Fxtal is less than 24.8MHz, or 0x11 otherwise
 // **** END MODULE MACROS ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
 typedef enum {
     POWERDOWN_IDLE = 0,
-    WAIT_POWER_AND_XTAL,
+    WAIT_XTAL,
     WAIT_TX_COMPLETE,
+    WAIT_RECEIVE,
 } ax_tx_state_t;
+
+typedef enum {
+    PTX_TRANSMIT = 0x5458,
+    PRX_ACK = 0xAC4B,
+} ax_packet_identifier_t;
+
+typedef struct {
+    uint8_t Size; // size of packet metadata (Size, RxAddr, Identifier) + size of relevant bytes in Payload buffer
+    uint32_t RxAddr;
+    ax_packet_identifier_t Identifier;
+    uint8_t Payload[AX_PAYLOAD_MAX_SIZE];
+} ax_tx_packet_t;
 // **** END MODULE TYPEDEFS ****
 // -----------------------------------------------------------------------------
 // **** MODULE GLOBAL VARIABLES ****
 ax_mode_t Mode = AX_MODE_NONE;
-uint8_t PllRangingA = 0;
-uint8_t ChannelVcoi = 0; // access this variable when ax crazy library calls axradio_get_pllvcoi function
-volatile ax_tx_state_t PtxState = POWERDOWN_IDLE;
+ax_tx_packet_t TxPacket;
+
+// PTX
+uint32_t PtxAckTimeoutStartTimeMs = 0;
+
+// PRX
+
+// common
+volatile ax_tx_state_t PtxState;
 volatile bool PtxXtalReady = false;
 volatile bool PtxTxComplete = false;
-volatile bool PrxDataAvailable = false;
+volatile bool DataAvailable = false;
+
+// parameters
+uint8_t ChannelVcoi = 0; // access this variable when ax crazy library calls axradio_get_pllvcoi function
+uint8_t PllRangingA = 0;
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
@@ -63,8 +82,12 @@ void AX_EnableOscillator(void);
 void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length);
 
 // IRQ handlers
-void AX_PTX_IRQ_Handler(GPIO_PIN pin, uintptr_t context);
-void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context);
+void AX_IRQ_Handler(GPIO_PIN pin, uintptr_t context);
+
+// register initialization
+void AX_InitConfigRegisters(void);
+void AX_InitTxRegisters(void);
+void AX_InitRxRegisters(void);
 
 // chip calibration / tuning
 uint8_t AX_AdjustVcoi(uint8_t rng);
@@ -129,20 +152,229 @@ bool AX_Init(ax_mode_t _mode) {
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
     AX_InitConfigRegisters(); // must re-init registers after VCOI calibration
     
-    if (Mode == AX_MODE_PRX) {
+    if (Mode == AX_MODE_PTX) {
+        PtxState = POWERDOWN_IDLE;
+    } else if (Mode == AX_MODE_PRX) {
+        PtxState = WAIT_RECEIVE;
         AX_InitRxRegisters();
-        GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_PRX_IRQ_Handler, (uintptr_t) NULL);
-    } else if (Mode == AX_MODE_PTX) {
-        GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_PTX_IRQ_Handler, (uintptr_t) NULL);
     }
 
-    /* enable interrupt on the chip's IRQ pin*/
+    /* attach callback and enable interrupt on the chip's IRQ pin*/
+    GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_IRQ_Handler, (uintptr_t) NULL);
     GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
     
     /* init the tx packet queue */
     AX_PacketQueue_Init();
     
     return true;
+}
+
+/* interrupt driven communication */
+void AX_CommTask(void) {
+    switch (PtxState) {
+        case POWERDOWN_IDLE:
+            if (!AX_IsQueueEmpty()) {
+                /* Clear FIFO */
+                AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+
+                /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
+                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
+
+                /* enable the oscillator */
+                AX_EnableOscillator();
+
+                PtxState = WAIT_XTAL;
+
+                /* Enable crystal oscillator interrupt */
+                AX_Write16(AX_REG_IRQMASK, (AX_IRQMXTALREADY));
+            }
+            break;
+        case WAIT_XTAL:
+            if (PtxXtalReady) {
+                PtxXtalReady = false;
+                
+                /* clear crystal oscillator interrupt mask */
+                AX_Write16(AX_REG_IRQMASK, 0x00);
+
+                /* write and commit packet to the FIFO */
+                uint8_t* pTxPacket = NULL, length = 0;
+                AX_DequeuePacket(&pTxPacket, &length);
+                if (pTxPacket) {
+                    AX_WritePacketToFifo(pTxPacket, length);
+                    PtxState = WAIT_TX_COMPLETE;
+                } else {
+                    // error
+                }
+
+                /* make sure bits in RADIOEVENTREQ are cleared */
+                AX_Read8(AX_REG_RADIOEVENTREQ0);
+                /* enable Tx complete interrupt */
+                AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMDONE);
+                AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
+
+                /* commit packet to the FIFO for tx */
+                AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
+            }
+            break;
+        case WAIT_TX_COMPLETE:
+            if (PtxTxComplete) {
+                PtxTxComplete = false;
+                
+                /* clear Tx done interrupt masks */
+                AX_Read8(AX_REG_RADIOEVENTREQ0);
+                AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
+                AX_Write16(AX_REG_IRQMASK, 0x00);
+
+                /* Place chip in POWERDOWN mode */
+                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+                PtxState = POWERDOWN_IDLE;
+                LED1_Toggle();
+                
+                /* switch into rx mode for ack */
+//                PtxState = WAIT_RECEIVE;
+//                AX_InitRxRegisters(); // enables FIFO not empty interrupt
+//                PtxAckTimeoutStartTimeMs = Time_GetMs();
+            }
+            break;
+        case WAIT_RECEIVE:
+            if (DataAvailable) {
+                DataAvailable = false;
+                
+                /* clear FIFO not empty interrupt mask */
+//                AX_Write16(AX_REG_IRQMASK, 0x00);
+                
+                LED1_Toggle();
+                // empty fifo
+                uint16_t cntRead = 0;
+                uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+                do {
+                    buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
+                    cntRead++;
+                } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
+                Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+                
+                /* place chip in POWERDOWN mode */
+//                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+//                PtxState = POWERDOWN_IDLE;
+                
+                // data received, switch into TX mode and send ACK
+                // TODO: try switching the interrupt callback register when ptx/prx switch modes to receive/send ack
+                /*
+                 * disable interrupts on gpio pin
+                 * switch callback register function
+                 * init tx registers
+                 * enable interrupts
+                 * enqueue ack message
+                 *  */
+            } 
+//            else if ((Time_GetMs() - PtxAckTimeoutStartTimeMs) >= AX_PTX_ACK_TIMEOUT_MS) {
+//                /* ack never received, place chip in POWERDOWN mode */
+//                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+//                PtxState = POWERDOWN_IDLE;
+//            }
+            break;
+    }
+}
+
+/* blocking transmit */
+int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
+    uint8_t returnVal = 0;
+
+    /* Clear FIFO */
+    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+
+    /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
+
+    /* enable the oscillator */
+    AX_EnableOscillator();
+
+    /* Wait for FIFO power ready */
+    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
+
+    /* write preamble and packet to FIFO */
+    AX_WritePacketToFifo(txPacket, length);
+    /* Wait for oscillator to start running  */
+    // block for now, can config to be interrupt driven later
+    while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
+
+    /* commit packet to the FIFO for tx */
+    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
+
+    /* wait for tx to complete */
+    // block for now, can config to be interrupt driven later
+    while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
+    returnVal = 1;
+
+    /* disable the TCXO if used */
+    // TODO
+    
+    /* Place chip in POWERDOWN mode */
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+
+    LED1_Toggle();
+
+    return returnVal;
+}
+
+// **** MODULE FUNCTION IMPLEMENTATIONS ****
+void AX_EnableOscillator(void) {
+    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
+    AX_Write8(AX_REG_0xF10, F10_VAL);
+    AX_Write8(AX_REG_0xF11, F11_VAL);
+}
+
+void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) { 
+    uint8_t fifoBytes[AX_FIFO_MAX_SIZE] = {0}, cnt = 0;
+
+    /* write preamble MATCHPAT1 bits */ 
+    fifoBytes[cnt++] = AX_FIFO_CHUNK_REPEATDATA;
+    fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
+    fifoBytes[cnt++] = 4; // preamble length of 4 bytes
+    fifoBytes[cnt++] = 0x55; // preamble value, sent preamble length times
+    
+    /* write preamble MATCHPAT0 bits */
+    fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA;
+    fifoBytes[cnt++] = 5; // preamble length of 4 bytes + fifo command flag byte
+    fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
+    fifoBytes[cnt++] = 0xCC;
+    fifoBytes[cnt++] = 0xAA;
+    fifoBytes[cnt++] = 0xCC;
+    fifoBytes[cnt++] = 0xAA;
+
+    /* write commands to fifo to prepare it for the incoming packet */
+    fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA; // fifo data command
+    fifoBytes[cnt++] = length + 1; // length byte, +1 to include control field byte
+    fifoBytes[cnt++] = AX_FIFO_TXDATA_PKTSTART | AX_FIFO_TXDATA_PKTEND; // control field byte
+    
+    memcpy(fifoBytes+cnt, txPacket, length);
+    AX_WriteFifo(fifoBytes, cnt+length);
+}
+
+void AX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
+    if (GPIO_PinRead(pin) == 1) {
+        switch (PtxState) {
+            case POWERDOWN_IDLE:
+                break;
+            case WAIT_XTAL:
+                PtxXtalReady = true;
+                break;
+            case WAIT_TX_COMPLETE:
+                PtxTxComplete = true;
+                break;
+            case WAIT_RECEIVE:
+                DataAvailable = true;
+                break;
+        }
+    }
+}
+
+void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
+    if (GPIO_PinRead(pin) == 1) {
+        uint16_t irqStatus = AX_Read16(AX_REG_IRQREQUEST);
+        if (irqStatus & AX_IRQMFIFONOTEMPTY)
+            DataAvailable = true;
+    }
 }
 
 void AX_InitConfigRegisters(void) {
@@ -223,11 +455,11 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_PKTADDRCFG, 0x01); // address bytes must start at position 1 in the buffer that is transmitted
     AX_Write8(AX_REG_PKTLENCFG, 0x80); // all bits in length byte are significant // does LEN POS of 0 mean pkt length must be in 0th pos of Tx buffer?
     AX_Write8(AX_REG_PKTLENOFFSET, 0x00);
-    AX_Write8(AX_REG_PKTMAXLEN, 0xC8);
+    AX_Write8(AX_REG_PKTMAXLEN, AX_FIFO_MAX_SIZE);
     if (Mode == AX_MODE_PTX) {
-        AX_Write32(AX_REG_PKTADDR, 0x00003432);
+        AX_Write32(AX_REG_PKTADDR, PTX_PKTADDR);
     } else if (Mode == AX_MODE_PRX) {
-        AX_Write32(AX_REG_PKTADDR, 0x00003433);
+        AX_Write32(AX_REG_PKTADDR, PRX_PKTADDR);
     }
     AX_Write32(AX_REG_PKTADDRMASK, 0x0000FFFF);
     AX_Write32(AX_REG_MATCH0PAT, 0xAACCAACC); // this is preamble0 that Rx uses to detect/accept an incoming packet
@@ -296,7 +528,7 @@ void AX_InitRxRegisters(void) {
     AX_Write8(AX_REG_XTALCAP, 0x00);
     AX_Write8(AX_REG_0xF00, 0x0F);
     AX_Write8(AX_REG_0xF18, 0x06);
-    
+
     // rx on continuous
     AX_Write8(AX_REG_RSSIREFERENCE, 0x36); // set offset for the computed RSSI
     AX_Write8(AX_REG_TMGRXAGC, 0x00); // AGC settling time
@@ -304,191 +536,13 @@ void AX_InitRxRegisters(void) {
     AX_Write8(AX_REG_TMGRXPREAMBLE2, 0x00); // preamble2 timeout - preamble 2 corresponds to MATCH1PAT
     AX_Write8(AX_REG_TMGRXPREAMBLE3, 0x00); // preamble3 timeout - preamble 3 corresponds to MATCH0PAT
     AX_Write8(AX_REG_PKTMISCFLAGS, 0x00); // disable all miscellaneous packet flags
-    
+
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS); // clear FIFO
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLRX);
-    
-    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY);
-    
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLRX); // set power mode to FULLRX
+
+    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY); // enable FIFO not empty interrupt
+
     AX_EnableOscillator();
-}
-
-/* interrupt driven transmit */
-void AX_TransmitTask(void) {
-    switch (PtxState) {
-        case POWERDOWN_IDLE:
-            if (!AX_IsQueueEmpty()) {
-                /* Clear FIFO */
-                AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
-
-                /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
-                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
-
-                /* enable the oscillator */
-                AX_EnableOscillator();
-
-                PtxState = WAIT_POWER_AND_XTAL;
-
-                /* Enable crystal oscillator interrupt */
-                AX_Write16(AX_REG_IRQMASK, (AX_IRQMXTALREADY));
-            }
-            break;
-        case WAIT_POWER_AND_XTAL:
-            if (PtxXtalReady) {
-                /* clear crystal oscillator interrupt mask */
-                AX_Write16(AX_REG_IRQMASK, 0x00);
-
-                /* write and commit packet to the FIFO */
-                uint8_t* pTxPacket = NULL, length = 0;
-                AX_DequeuePacket(&pTxPacket, &length);
-                if (pTxPacket) {
-                    AX_WritePacketToFifo(pTxPacket, length);
-                    PtxState = WAIT_TX_COMPLETE;
-                } else {
-                    // error
-                }
-
-                /* make sure bits in RADIOEVENTREQ are cleared */
-                AX_Read8(AX_REG_RADIOEVENTREQ0);
-                /* enable Tx complete interrupt */
-                AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMDONE);
-                AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
-
-                /* commit packet to the FIFO for tx */
-                AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
-            }
-            break;
-        case WAIT_TX_COMPLETE:
-            if (PtxTxComplete) {
-                /* clear Tx done interrupt masks */
-                AX_Read8(AX_REG_RADIOEVENTREQ0);
-                AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
-                AX_Write16(AX_REG_IRQMASK, 0x00);
-
-                /* Place chip in POWERDOWN mode */
-                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-                PtxXtalReady = false;
-                PtxTxComplete = false;
-
-                PtxState = POWERDOWN_IDLE;
-
-                LED1_Toggle();
-            }
-            break;
-    }
-}
-
-/* blocking transmit */
-int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
-    uint8_t returnVal = 0;
-
-    /* Clear FIFO */
-    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
-
-    /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
-
-    /* enable the oscillator */
-    AX_EnableOscillator();
-
-    /* Wait for FIFO power ready */
-    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
-
-    /* write preamble and packet to FIFO */
-    AX_WritePacketToFifo(txPacket, length);
-    /* Wait for oscillator to start running  */
-    // block for now, can config to be interrupt driven later
-    while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
-
-    /* commit packet to the FIFO for tx */
-    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
-
-    /* wait for tx to complete */
-    // block for now, can config to be interrupt driven later
-    while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
-    returnVal = 1;
-
-    /* disable the TCXO if used */
-    // TODO
-    
-    /* Place chip in POWERDOWN mode */
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-
-    LED1_Toggle();
-
-    return returnVal;
-}
-
-void AX_ReceivePacket(uint8_t* rxPacket) {
-    if (PrxDataAvailable) {
-        PrxDataAvailable = false;
-        LED1_Toggle();
-        // empty fifo
-        uint16_t cntRead = 0;
-        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
-        do {
-            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
-            cntRead++;
-        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
-        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
-    }
-}
-
-// **** MODULE FUNCTION IMPLEMENTATIONS ****
-void AX_EnableOscillator(void) {
-    AX_Write8(AX_REG_PINFUNCPWRAMP, PINFUNCPWRAMP_VAL);
-    AX_Write8(AX_REG_0xF10, F10_VAL);
-    AX_Write8(AX_REG_0xF11, F11_VAL);
-}
-
-void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) { 
-    uint8_t fifoBytes[AX_FIFO_MAX_SIZE] = {0}, cnt = 0;
-
-    /* write preamble MATCHPAT1 bits */ 
-    fifoBytes[cnt++] = AX_FIFO_CHUNK_REPEATDATA;
-    fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
-    fifoBytes[cnt++] = 4; // preamble length of 4 bytes
-    fifoBytes[cnt++] = 0x55; // preamble value, sent preamble length times
-    
-    /* write preamble MATCHPAT0 bits */
-    fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA;
-    fifoBytes[cnt++] = 5; // preamble length of 4 bytes + fifo command flag byte
-    fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
-    fifoBytes[cnt++] = 0xCC;
-    fifoBytes[cnt++] = 0xAA;
-    fifoBytes[cnt++] = 0xCC;
-    fifoBytes[cnt++] = 0xAA;
-
-    /* write commands to fifo to prepare it for the incoming packet */
-    fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA; // fifo data command
-    fifoBytes[cnt++] = length + 1; // length byte, +1 to include control field byte
-    fifoBytes[cnt++] = AX_FIFO_TXDATA_PKTSTART | AX_FIFO_TXDATA_PKTEND; // control field byte
-    
-    memcpy(fifoBytes+cnt, txPacket, length);
-    AX_WriteFifo(fifoBytes, cnt+length);
-}
-
-void AX_PTX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
-    if (GPIO_PinRead(pin) == 1) {
-        switch (PtxState) {
-            case POWERDOWN_IDLE:
-                break;
-            case WAIT_POWER_AND_XTAL:
-                PtxXtalReady = true;
-                break;
-            case WAIT_TX_COMPLETE:
-                PtxTxComplete = true;
-                break;
-        }
-    }
-}
-
-void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
-    if (GPIO_PinRead(pin) == 1) {
-        uint16_t irqStatus = AX_Read16(AX_REG_IRQREQUEST);
-        if (irqStatus & AX_IRQMFIFONOTEMPTY)
-            PrxDataAvailable = true;
-    }
 }
 
 // ported over from ax radio's crazy library.
