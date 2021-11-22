@@ -20,6 +20,8 @@
 #include "Time.h"
 
 #include "definitions.h"
+#include "AX_RegisterAPI.h"
+#include "AX_Registers.h"
 
 #define SW_VERSION 0.1f
 
@@ -63,7 +65,7 @@ int main(int argc, char** argv) {
     mode = AX_MODE_PTX;
 #endif
     if (AX_Init(mode)) {
-        Print_EnqueueMsg("ax init okay\n");
+        Print_EnqueueMsg("ax init okay, Mode = %u\n", mode);
     } else {
         Print_EnqueueMsg("ax init falied!\n");
     }
@@ -76,7 +78,12 @@ int main(int argc, char** argv) {
         AX_CommTask();
         
 #if defined(AX_RECEIVER)
-
+        unsigned long ct = Time_GetMs();      
+        static unsigned long pt = 0;
+        if (ct - pt >= 2500) {
+            pt = ct;
+            Print_EnqueueMsg("alive, CommState = %u, pwrmode 0x%X, fifostat 0x%X\n", GetState(), AX_Read8(AX_REG_PWRMODE), AX_Read8(AX_REG_FIFOSTAT));
+        }
 #else
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;
