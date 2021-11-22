@@ -75,16 +75,17 @@ int main(int argc, char** argv) {
         SYS_Tasks();
         Print_Task();
         IMU_SampleTask();
-        AX_CommTask();
         
 #if defined(AX_RECEIVER)
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;
-        if (ct - pt >= 2500) {
+        if (ct - pt >= 5) {
             pt = ct;
-            Print_EnqueueMsg("alive, CommState = %u, pwrmode 0x%X, fifostat 0x%X\n", GetState(), AX_Read8(AX_REG_PWRMODE), AX_Read8(AX_REG_FIFOSTAT));
+//            Print_EnqueueMsg("alive, CommState = %u, pwrmode 0x%X, fifostat 0x%X\n", GetState(), AX_Read8(AX_REG_PWRMODE), AX_Read8(AX_REG_FIFOSTAT));
+            AX_Receive();
         }
 #else
+        AX_CommTask();
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;
         if (ct - pt >= 5000) {

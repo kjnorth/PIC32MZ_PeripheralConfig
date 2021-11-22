@@ -54,6 +54,7 @@ extern "C" {
     int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
     
     uint16_t GetState(void); // TODO: Delete
+    void AX_Receive(void);
     
     extern bool AX_EnqueuePacket(uint8_t* txPacket, uint8_t length);
     // **** END GLOBAL FUNCTION PROTOTYPES ****

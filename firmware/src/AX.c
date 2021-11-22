@@ -177,6 +177,45 @@ bool AX_Init(ax_mode_t _mode) {
     return true;
 }
 
+void AX_Receive(void) {
+    uint8_t fifostat = AX_Read8(AX_REG_FIFOSTAT);
+    if ((fifostat & AX_FIFO_EMPTY) == 0) {
+        // fifo is not empty
+        LED1_Toggle();
+        // empty fifo
+        uint16_t cntRead = 0;
+        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+        do {
+            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
+            cntRead++;
+        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
+        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+        
+        // switch into Tx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitTxRegisters();
+        
+        /* write an ack packet */
+        uint8_t packet[9] = {0x09, 0x32, 0x34, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD};
+        static uint16_t counter = 0;
+        counter++;
+        packet[3] = (uint8_t) (counter & 0x00FF);
+        packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
+        AX_TransmitPacket(packet, 9);
+        
+        // switch back into Rx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitRxRegisters();
+        
+        static int i = 1;
+        Print_EnqueueMsg("repeat %u\n", i++);
+    }
+}
+
 /* interrupt driven communication */
 void AX_CommTask(void) {
     switch (CommState) {
@@ -362,7 +401,7 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     // TODO
     
     /* Place chip in POWERDOWN mode */
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
 
     LED1_Toggle();
 
