@@ -75,6 +75,8 @@ void AX_WriteLong16(uint16_t reg, uint16_t value) {
     AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
 }
 
+#include "Print.h"
+#include "Time.h"
 void AX_Write16(uint16_t reg, uint16_t value) {
     if (reg > 0x0070) { /* long access */
         AX_WriteLong16(reg, value);
@@ -299,7 +301,6 @@ void AX_SPI_Transfer(unsigned char* data, uint8_t length) {
     static unsigned char dataToReceive[256];
     SPI1_WriteRead(data, length, dataToReceive, length);
     memcpy(data, dataToReceive, length);
-    while (IsSPIBusy()) {
-    };
+    while (IsSPIBusy()) {};
 }
 // **** END MODULE FUNCTION IMPLEMENTATIONS ****

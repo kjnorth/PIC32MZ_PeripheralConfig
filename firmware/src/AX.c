@@ -27,7 +27,7 @@
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
-//#define _DEBUG
+#define _DEBUG
 #ifdef _DEBUG
 #define debug Print_EnqueueMsg
 #else
@@ -37,12 +37,10 @@
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
 typedef enum {
-    POWERDOWN_IDLE = 0,
+    IDLE = 0,
     WAIT_XTAL,
     WAIT_TX_COMPLETE,
     WAIT_RECEIVE,
-    WAIT_STATE_CHANGE_TO_TX,
-    WAIT_STATE_CHANGE_TO_RX,
 } ax_tx_state_t;
 
 typedef enum {
@@ -71,7 +69,6 @@ uint32_t PtxAckTimeoutStartTimeMs = 0;
 ax_tx_state_t CommState;
 volatile bool XtalReady = false;
 volatile bool TxComplete = false;
-volatile bool StateChange = false;
 volatile bool DataAvailable = false;
 
 // parameters
@@ -102,6 +99,21 @@ uint16_t GetState(void) {
     return (uint16_t) CommState;
 }
 
+void AX_EnableTxRxDoneIRQ(void) {
+    /* make sure bits in RADIOEVENTREQ are cleared */
+    AX_Read8(AX_REG_RADIOEVENTREQ0);
+    /* enable Tx complete interrupt */
+    AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMDONE);
+    AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);   
+}
+
+void AX_ClearTxRxDoneIRQ(void) {
+    /* clear Tx done interrupt masks */
+    AX_Read8(AX_REG_RADIOEVENTREQ0);
+    AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
+    AX_Write16(AX_REG_IRQMASK, 0x00);
+}
+
 bool AX_Init(ax_mode_t _mode) {
     Mode = _mode;
     uint8_t revision = 0, scratch = 0;
@@ -126,7 +138,7 @@ bool AX_Init(ax_mode_t _mode) {
     while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
     
     // write synthesizer frequency A
-    AX_Write32(AX_REG_FREQA, 0x1216EEEF); // NOTE: this may need to be changed when switching to internal crystal
+    AX_Write32(AX_REG_FREQA, 0x1216EEEF); // NOTE: this may need to be changed if crystal frequency is altered
     
     AX_Write8(AX_REG_PLLRANGINGA, 0x1A); // start the auto ranging process with VCO_A range of 10
     // wait for ranging to complete
@@ -160,14 +172,13 @@ bool AX_Init(ax_mode_t _mode) {
     AX_InitConfigRegisters(); // must re-init registers after VCOI calibration
     
     if (Mode == AX_MODE_PTX) {
-        CommState = POWERDOWN_IDLE;
+        CommState = IDLE;
     } else if (Mode == AX_MODE_PRX) {
         CommState = WAIT_RECEIVE;
         AX_InitRxRegisters();
-        AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY); // enable FIFO not empty interrupt
     }
 
-    /* attach callback and enable interrupt on the chip's IRQ pin*/
+    /* attach callback and enable interrupt on the chip's IRQ pin */
     GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_IRQ_Handler, (uintptr_t) NULL);
     GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
     
@@ -177,49 +188,10 @@ bool AX_Init(ax_mode_t _mode) {
     return true;
 }
 
-void AX_Receive(void) {
-    uint8_t fifostat = AX_Read8(AX_REG_FIFOSTAT);
-    if ((fifostat & AX_FIFO_EMPTY) == 0) {
-        // fifo is not empty
-        LED1_Toggle();
-        // empty fifo
-        uint16_t cntRead = 0;
-        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
-        do {
-            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
-            cntRead++;
-        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
-        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
-        
-        // switch into Tx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
-        AX_InitTxRegisters();
-        
-        /* write an ack packet */
-        uint8_t packet[9] = {0x09, 0x32, 0x34, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD};
-        static uint16_t counter = 0;
-        counter++;
-        packet[3] = (uint8_t) (counter & 0x00FF);
-        packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
-        AX_TransmitPacket(packet, 9);
-        
-        // switch back into Rx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
-        AX_InitRxRegisters();
-        
-        static int i = 1;
-        Print_EnqueueMsg("repeat %u\n", i++);
-    }
-}
-
 /* interrupt driven communication */
 void AX_CommTask(void) {
     switch (CommState) {
-        case POWERDOWN_IDLE:
+        case IDLE:
             if (!AX_IsQueueEmpty()) {
                 /* Clear FIFO */
                 AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
@@ -233,15 +205,19 @@ void AX_CommTask(void) {
                 CommState = WAIT_XTAL;
 
                 /* Enable crystal oscillator interrupt */
-                AX_Write16(AX_REG_IRQMASK, (AX_IRQMXTALREADY));
+//                AX_Write16(AX_REG_IRQMASK, AX_IRQMXTALREADY);
+                AX_Write8(AX_REG_IRQMASK1, 0x01);
+                AX_Write8(AX_REG_IRQMASK0, 0x00);
             }
             break;
         case WAIT_XTAL:
-            if (XtalReady) {
+            if (XtalReady /*|| (AX_Read8(AX_REG_XTALSTATUS) == 0x01)*/) { // PROBLEM IS THIS INTERRUPT DOESN'T FIRE SOMETIMES, so polling now
                 XtalReady = false;
                 
                 /* clear crystal oscillator interrupt mask */
-                AX_Write16(AX_REG_IRQMASK, 0x00);
+//                AX_Write16(AX_REG_IRQMASK, 0x00);
+                AX_Write8(AX_REG_IRQMASK1, 0x00);
+                AX_Write8(AX_REG_IRQMASK0, 0x00);
 
                 /* write and commit packet to the FIFO */
                 uint8_t* pTxPacket = NULL, length = 0;
@@ -257,33 +233,41 @@ void AX_CommTask(void) {
                 AX_Read8(AX_REG_RADIOEVENTREQ0);
                 /* enable Tx complete interrupt */
                 AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMDONE);
-                AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
+//                AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL); // IT LOOKS LIKE A WRITE TO THE IRQMASK REGISTER FAILS SOMETIMES
+                                                            // Could it be faulty jumper wire connection? Or strange timing issue...
+                                                            // Should I write only 8 bits???
+                AX_Write8(AX_REG_IRQMASK1, 0x00);
+                AX_Write8(AX_REG_IRQMASK0, 0x40);
 
                 /* commit packet to the FIFO for tx */
                 AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
             }
             break;
         case WAIT_TX_COMPLETE:
-            if (TxComplete) {
+            if (TxComplete /*|| (AX_Read8(AX_REG_RADIOSTATE) == 0x00)*/) { // PROBLEM IS THIS INTERRUPT DOESN'T FIRE SOMETIMES, so polling now
                 TxComplete = false;
                 
                 /* clear Tx done interrupt masks */
                 AX_Read8(AX_REG_RADIOEVENTREQ0);
                 AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
-                AX_Write16(AX_REG_IRQMASK, 0x00);
+//                AX_Write16(AX_REG_IRQMASK, 0x00);
+                AX_Write8(AX_REG_IRQMASK1, 0x00);
+                AX_Write8(AX_REG_IRQMASK0, 0x00);
 
                 if (Mode == AX_MODE_PTX) {
                     /* Place chip in POWERDOWN mode */
-                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-                    CommState = POWERDOWN_IDLE;
-                    LED1_Toggle();
+//                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+//                    CommState = IDLE;
+//                    LED1_Toggle();
+                    
+                    // for receiving the ack
+                    CommState = WAIT_RECEIVE;
+                    AX_InitRxRegisters(); // enables FIFO not empty interrupt
+                    PtxAckTimeoutStartTimeMs = Time_GetMs();
                 } else if (Mode == AX_MODE_PRX) {
                     /* switch back into rx mode */
-                    CommState = WAIT_STATE_CHANGE_TO_RX;
-                    AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMRADIOSTATECHG); // enable state change interrupt
-                    AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
-                    AX_InitRxRegisters(); // enables FIFO not empty interrupt // NOT ANYMORE
-                    PtxAckTimeoutStartTimeMs = Time_GetMs();
+                    CommState = WAIT_RECEIVE;
+                    AX_InitRxRegisters(); // enables FIFO not empty interrupt
                 }
             }
             break;
@@ -292,7 +276,9 @@ void AX_CommTask(void) {
                 DataAvailable = false;
                 
                 /* clear FIFO not empty interrupt mask */
-                AX_Write16(AX_REG_IRQMASK, 0x00);
+//                AX_Write16(AX_REG_IRQMASK, 0x00);
+                AX_Write8(AX_REG_IRQMASK1, 0x00);
+                AX_Write8(AX_REG_IRQMASK0, 0x00);
                 
                 LED1_Toggle();
                 // empty fifo
@@ -304,16 +290,27 @@ void AX_CommTask(void) {
                 } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
                 Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
                 
-                AX_InitTxRegisters();
                 if (Mode == AX_MODE_PTX) {
                     /* place chip in POWERDOWN mode */
-                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-                    CommState = POWERDOWN_IDLE;
+//                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+//                    CommState = IDLE;
+//                    AX_InitTxRegisters();
+                
+                    // switch back to Tx mode 
+                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+                    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+                    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != 0) {}; // wait for SVMODEM bit to be cleared
+                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+                    AX_InitTxRegisters();
+                    CommState = IDLE;
                 } else if (Mode == AX_MODE_PRX) {
-                    CommState = WAIT_STATE_CHANGE_TO_TX;
-                    AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMRADIOSTATECHG); // enable state change interrupt
-                    AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
-                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+                    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+                    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != 0) {}; // wait for SVMODEM bit to be cleared
+                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+                    AX_InitTxRegisters();
+                    CommState = IDLE;
+                    
                     /* enqueue an ack packet */
                     uint8_t packet[9] = {0x09, 0x32, 0x34, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD};
                     static uint16_t counter = 0;
@@ -325,42 +322,15 @@ void AX_CommTask(void) {
             } 
             else if (Mode == AX_MODE_PTX) { 
                 if ((Time_GetMs() - PtxAckTimeoutStartTimeMs) >= AX_PTX_ACK_TIMEOUT_MS) {
-                    /* ack never received, place chip in POWERDOWN mode */
-                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
-                    CommState = POWERDOWN_IDLE;
-                }
-            }
-            break;
-        case WAIT_STATE_CHANGE_TO_TX:
-            if (StateChange) {
-                StateChange = false;
-
-                /* clear state change interrupt masks */
-                AX_Read8(AX_REG_RADIOEVENTREQ0);
-                AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
-                AX_Write16(AX_REG_IRQMASK, 0x00);
-
-                if (Mode == AX_MODE_PTX) {
-
-                } else if (Mode == AX_MODE_PRX) {
-                    CommState = POWERDOWN_IDLE;
-                }
-            }
-            break;
-        case WAIT_STATE_CHANGE_TO_RX:
-            if (StateChange) {
-                StateChange = false;
-
-                /* clear state change interrupt masks */
-                AX_Read8(AX_REG_RADIOEVENTREQ0);
-                AX_Write8(AX_REG_RADIOEVENTMASK0, 0x00);
-                AX_Write16(AX_REG_IRQMASK, 0x00);
-
-                if (Mode == AX_MODE_PTX) {
-
-                } else if (Mode == AX_MODE_PRX) {
-                    CommState = WAIT_RECEIVE;
-                    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY); // enable FIFO not empty interrupt
+                    /* ack never received, switch back to Tx mode */
+                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+                    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+                    while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != 0) {
+                    }; // wait for SVMODEM bit to be cleared
+                    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+                    AX_InitTxRegisters();
+                    CommState = IDLE;
+                    debug("timeout waiting for ack\n");
                 }
             }
             break;
@@ -445,17 +415,13 @@ void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
 void AX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
     if (GPIO_PinRead(pin) == 1) {
         switch (CommState) {
-            case POWERDOWN_IDLE:
+            case IDLE:
                 break;
             case WAIT_XTAL:
                 XtalReady = true;
                 break;
             case WAIT_TX_COMPLETE:
                 TxComplete = true;
-                break;
-            case WAIT_STATE_CHANGE_TO_TX:
-            case WAIT_STATE_CHANGE_TO_RX:
-                StateChange = true;
                 break;
             case WAIT_RECEIVE:
                 DataAvailable = true;
@@ -474,7 +440,9 @@ void AX_PRX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
 
 void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_POWIRQMASK, 0x00); // power related interrupts
-    AX_Write16(AX_REG_IRQMASK, 0x0000); // enable specific interrupts with this register, upon IRQ, read IRQREQUEST register
+//    AX_Write16(AX_REG_IRQMASK, 0x0000); // enable specific interrupts with this register, upon IRQ, read IRQREQUEST register
+    AX_Write8(AX_REG_IRQMASK1, 0x00);
+    AX_Write8(AX_REG_IRQMASK0, 0x00);
     AX_Write16(AX_REG_RADIOEVENTMASK, 0x00); // enable more interrupts with this register
     AX_Write8(AX_REG_MODULATION, 0x08);
     AX_Write8(AX_REG_ENCODING, 0x00);
@@ -635,7 +603,9 @@ void AX_InitRxRegisters(void) {
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS); // clear FIFO
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLRX); // set power mode to FULLRX
 
-//    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY); // enable FIFO not empty interrupt // MOVED THIS ELSEWHERE
+//    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY); // enable FIFO not empty interrupt
+    AX_Write8(AX_REG_IRQMASK1, 0x00);
+    AX_Write8(AX_REG_IRQMASK0, 0x01);
 
     AX_EnableOscillator();
 }
@@ -698,3 +668,42 @@ int16_t AX_TuneVoltage(void) {
     return r;
 }
 // **** END MODULE FUNCTION IMPLEMENTATIONS ****
+
+void AX_Receive(void) {
+    uint8_t fifostat = AX_Read8(AX_REG_FIFOSTAT);
+    if ((fifostat & AX_FIFO_EMPTY) == 0) {
+        // fifo is not empty
+        LED1_Toggle();
+        // empty fifo
+        uint16_t cntRead = 0;
+        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+        do {
+            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
+            cntRead++;
+        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
+        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+
+        // switch into Tx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitTxRegisters();
+
+        /* write an ack packet */
+        uint8_t packet[9] = {0x09, 0x32, 0x34, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD};
+        static uint16_t counter = 0;
+        counter++;
+        packet[3] = (uint8_t) (counter & 0x00FF);
+        packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
+        AX_TransmitPacket(packet, 9);
+
+        // switch back into Rx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitRxRegisters();
+
+        static int i = 1;
+        Print_EnqueueMsg("repeat %u\n", i++);
+    }
+}

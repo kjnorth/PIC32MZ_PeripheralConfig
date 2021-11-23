@@ -46,6 +46,9 @@
 #define AX_REG_IRQREQUEST		0x00C	/* IRQ Request */
 #define AX_REG_RADIOEVENTREQ	0x00E	/* Radio Event Request */
 
+#define AX_REG_IRQMASK1         0x006 // upper byte
+#define AX_REG_IRQMASK0         0x007 // lower byte
+
 #define AX_REG_RADIOEVENTMASK1	0x008
 #define AX_REG_RADIOEVENTMASK0	0x009
 
