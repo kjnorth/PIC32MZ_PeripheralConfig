@@ -82,7 +82,8 @@ int main(int argc, char** argv) {
         static unsigned long preLogTime = 0;
         if (curLogTime - preLogTime >= 5000) {
             preLogTime = curLogTime;
-            Print_EnqueueMsg("alive, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n", GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
+            Print_EnqueueMsg("alive for %lus, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n",
+                    (Time_GetMs() / 1000), GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
 //            AX_Receive();
         }
 #if defined(AX_RECEIVER)

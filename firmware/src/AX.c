@@ -215,9 +215,6 @@ void AX_CommTask(void) {
                 /* clear crystal oscillator interrupt mask */
                 AX_Write16(AX_REG_IRQMASK, 0x00);
                 
-                /* init registers for Tx */
-//                AX_InitTxRegisters();
-
                 /* write and commit packet to the FIFO */
                 uint8_t* pTxPacket = NULL, length = 0;
                 AX_DequeuePacket(&pTxPacket, &length);
@@ -226,7 +223,7 @@ void AX_CommTask(void) {
                     CommState = WAIT_TX_COMPLETE;
                 } else {
                     // error
-                    debug("ERROR DEQUEUEING PACKET\n");
+                    debug("ERROR DEQUEUEING AX RF PACKET\n");
                 }
 
                 /* make sure bits in RADIOEVENTREQ are cleared */
@@ -581,8 +578,7 @@ void AX_RxSwitchToTx(void) {
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
     while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != 0) {}; // wait for SVMODEM bit to be cleared
 //    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON); // their code does not do this
-    
-    AX_InitTxRegisters(); // initing Tx registers from within state machine now
+    AX_InitTxRegisters();
 }
 
 // ported over from ax radio's crazy library.
