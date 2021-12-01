@@ -77,14 +77,16 @@ int main(int argc, char** argv) {
         IMU_SampleTask();
         AX_CommTask();
         
-#if defined(AX_RECEIVER)
-        unsigned long ct = Time_GetMs();      
-        static unsigned long pt = 0;
-        if (ct - pt >= 5000) {
-            pt = ct;
-            Print_EnqueueMsg("alive, CommState = %u, irqmask 0x%02X, fifostat 0x%02X\n", GetState(), AX_Read8(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
+//#if defined(AX_RECEIVER)
+        unsigned long curLogTime = Time_GetMs();      
+        static unsigned long preLogTime = 0;
+        if (curLogTime - preLogTime >= 5000) {
+            preLogTime = curLogTime;
+            Print_EnqueueMsg("alive, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n", GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
 //            AX_Receive();
         }
+#if defined(AX_RECEIVER)
+
 #else
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;

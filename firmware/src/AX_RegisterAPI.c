@@ -18,7 +18,7 @@
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
-
+#define USE_8_BIT_WRITES
 // **** END MODULE MACROS ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
@@ -63,6 +63,7 @@ void AX_Write8(uint16_t reg, uint8_t value) {
     }
 }
 
+#ifndef USE_8_BIT_WRITES
 void AX_WriteLong16(uint16_t reg, uint16_t value) {
     uint8_t buf[4];
 
@@ -74,10 +75,10 @@ void AX_WriteLong16(uint16_t reg, uint16_t value) {
 
     AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
 }
+#endif
 
-#include "Print.h"
-#include "Time.h"
 void AX_Write16(uint16_t reg, uint16_t value) {
+#ifndef USE_8_BIT_WRITES
     if (reg > 0x0070) { /* long access */
         AX_WriteLong16(reg, value);
     } else { /* short access */
@@ -90,8 +91,13 @@ void AX_Write16(uint16_t reg, uint16_t value) {
 
         AXStatus = ((uint16_t) (buf[0] << 8));
     }
+#else
+    AX_Write8(reg,   (uint8_t) ((value & 0xFF00) >> 8));
+    AX_Write8(reg+1, (uint8_t) ((value & 0x00FF) >> 0));
+#endif
 }
 
+#ifndef USE_8_BIT_WRITES
 void AX_WriteLong24(uint16_t reg, uint32_t value) {
     uint8_t buf[5];
 
@@ -104,8 +110,10 @@ void AX_WriteLong24(uint16_t reg, uint32_t value) {
 
     AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
 }
+#endif
 
 void AX_Write24(uint16_t reg, uint32_t value) {
+#ifndef USE_8_BIT_WRITES
     if (reg > 0x0070) { /* long access */
         AX_WriteLong24(reg, value);
     } else { /* short access */
@@ -119,8 +127,14 @@ void AX_Write24(uint16_t reg, uint32_t value) {
 
         AXStatus = ((uint16_t) (buf[0] << 8));
     }
+#else
+    AX_Write8(reg,   (uint8_t) ((value & 0x00FF0000) >> 16));
+    AX_Write8(reg+1, (uint8_t) ((value & 0x0000FF00) >> 8));
+    AX_Write8(reg+2, (uint8_t) ((value & 0x000000FF) >> 0));
+#endif
 }
 
+#ifndef USE_8_BIT_WRITES
 void AX_WriteLong32(uint16_t reg, uint32_t value) {
     uint8_t buf[6];
 
@@ -134,8 +148,10 @@ void AX_WriteLong32(uint16_t reg, uint32_t value) {
 
     AXStatus = ((uint16_t) (buf[0] << 8)) | buf[1];
 }
+#endif
 
 void AX_Write32(uint16_t reg, uint32_t value) {
+#ifndef USE_8_BIT_WRITES
     if (reg > 0x0070) { /* long access */
         AX_WriteLong32(reg, value);
     } else { /* short access */
@@ -150,6 +166,12 @@ void AX_Write32(uint16_t reg, uint32_t value) {
 
         AXStatus = ((uint16_t) (buf[0] << 8));
     }
+#else
+    AX_Write8(reg,   (uint8_t) ((value & 0xFF000000) >> 24));
+    AX_Write8(reg+1, (uint8_t) ((value & 0x00FF0000) >> 16));
+    AX_Write8(reg+2, (uint8_t) ((value & 0x0000FF00) >> 8));
+    AX_Write8(reg+3, (uint8_t) ((value & 0x000000FF) >> 0));
+#endif
 }
 
 uint8_t AX_ReadLong8(uint16_t reg) {
