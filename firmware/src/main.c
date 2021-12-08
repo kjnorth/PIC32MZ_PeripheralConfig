@@ -68,6 +68,14 @@ int main(int argc, char** argv) {
         Print_EnqueueMsg("ax init okay, Mode = %u\n", mode);
     } else {
         Print_EnqueueMsg("ax init falied!\n");
+        while (1) {
+            unsigned long ct = Time_GetMs();
+            static unsigned long pt = 0;
+            if (ct - pt >= 250) {
+                pt = ct;
+                LED1_Toggle();
+            }
+        }
     }
     
     while (1) {
@@ -75,31 +83,39 @@ int main(int argc, char** argv) {
         SYS_Tasks();
         Print_Task();
         IMU_SampleTask();
-        AX_CommTask();
         
-//#if defined(AX_RECEIVER)
-        unsigned long curLogTime = Time_GetMs();      
-        static unsigned long preLogTime = 0;
-        if (curLogTime - preLogTime >= 5000) {
-            preLogTime = curLogTime;
-            Print_EnqueueMsg("alive for %lus, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n",
-                    (Time_GetMs() / 1000), GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
-//            AX_Receive();
-        }
 #if defined(AX_RECEIVER)
+//        AX_CommTask();
+        unsigned long curTime = Time_GetMs();      
+        static unsigned long preCheckTime = 0;
+        static unsigned long preLogTime = 0;
+        if (curTime - preCheckTime >= 5) {
+            preCheckTime = curTime;
+            AX_Receive();
+        }
+        
+        if (curTime - preLogTime >= 5000) {
+            preLogTime = curTime;
+            Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n",
+                    (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
+        }
+//#if defined(AX_RECEIVER)
 
 #else
+//        AX_CommTask();
         unsigned long ct = Time_GetMs();      
         static unsigned long pt = 0;
-        if (ct - pt >= 5000) {
+        if (ct - pt >= 1000) {
+            Print_EnqueueMsg("alive for %lum\n", (Time_GetMs() / 60000));
             pt = ct;
             uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
             static uint16_t counter = 0;
             counter++;
             packet[3] = (uint8_t) (counter & 0x00FF);
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
-            AX_EnqueuePacket(packet, 9);
-//            AX_TransmitPacket(packet, 9);
+//            AX_EnqueuePacket(packet, 9);
+            AX_TransmitPacket(packet, 9);
+//            AX_TransmitPacket_TEMP(packet, 9);
         }
 #endif        
     }

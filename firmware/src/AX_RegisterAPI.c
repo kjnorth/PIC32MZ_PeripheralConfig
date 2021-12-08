@@ -15,6 +15,7 @@
 
 #include "peripheral/gpio/plib_gpio.h"
 #include "peripheral/spi/spi_master/plib_spi1_master.h"
+#include "Time.h"
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
@@ -311,6 +312,13 @@ void AX_WriteFifo(uint8_t* buffer, uint8_t length) {
     for (i = 0; i < length; i++) {
         AX_Write8(AX_REG_FIFODATA, buffer[i]);
     }
+}
+
+bool AX_SPITest(uint16_t reg, uint8_t value) {
+    /* this should be used on 1 byte registers only */
+    AX_Write8(reg, value);
+    uint8_t test = AX_Read8(reg);
+    return (test == value);
 }
 
 // **** MODULE FUNCTION IMPLEMENTATIONS ****

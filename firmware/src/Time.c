@@ -18,7 +18,7 @@
 #include "peripheral/coretimer/plib_coretimer.h"
 
 // **** MODULE GLOBAL VARIABLES ****
-static volatile uint32_t MsTicks;
+static volatile uint32_t MsTicks = 0;
 // **** END MODULE GLOBAL VARIABLES ****
 
 // **** MODULE FUNCTION PROTOTYPES ****

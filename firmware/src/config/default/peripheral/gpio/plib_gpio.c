@@ -95,6 +95,8 @@ void GPIO_Initialize ( void )
     PORTJ;
     IEC3SET = _IEC3_CNJIE_MASK;
     /* PORTK Initialization */
+    LATK = 0x0; /* Initial Latch Value */
+    TRISKCLR = 0xf0; /* Direction Control */
     CNPUKSET = 0x6; /* Pull-Up Enable */
 
     /* Change Notice Enable */

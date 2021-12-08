@@ -45,6 +45,8 @@ extern "C" {
     uint32_t AX_Read32(uint16_t reg);
     
     void AX_WriteFifo(uint8_t* buffer, uint8_t length);
+    
+    bool AX_SPITest(uint16_t reg, uint8_t value);
     // **** END GLOBAL FUNCTION PROTOTYPES ****
     // -------------------------------------------------------------------------
 #ifdef	__cplusplus

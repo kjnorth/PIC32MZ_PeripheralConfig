@@ -469,6 +469,33 @@
 #define U1TX_TO_IMU_Get()               ((PORTF >> 5) & 0x1)
 #define U1TX_TO_IMU_PIN                  GPIO_PIN_RF5
 
+/*** Macros for LED_B3 pin ***/
+#define LED_B3_Set()               (LATKSET = (1<<4))
+#define LED_B3_Clear()             (LATKCLR = (1<<4))
+#define LED_B3_Toggle()            (LATKINV= (1<<4))
+#define LED_B3_OutputEnable()      (TRISKCLR = (1<<4))
+#define LED_B3_InputEnable()       (TRISKSET = (1<<4))
+#define LED_B3_Get()               ((PORTK >> 4) & 0x1)
+#define LED_B3_PIN                  GPIO_PIN_RK4
+
+/*** Macros for LED_B2 pin ***/
+#define LED_B2_Set()               (LATKSET = (1<<5))
+#define LED_B2_Clear()             (LATKCLR = (1<<5))
+#define LED_B2_Toggle()            (LATKINV= (1<<5))
+#define LED_B2_OutputEnable()      (TRISKCLR = (1<<5))
+#define LED_B2_InputEnable()       (TRISKSET = (1<<5))
+#define LED_B2_Get()               ((PORTK >> 5) & 0x1)
+#define LED_B2_PIN                  GPIO_PIN_RK5
+
+/*** Macros for LED_B1 pin ***/
+#define LED_B1_Set()               (LATKSET = (1<<6))
+#define LED_B1_Clear()             (LATKCLR = (1<<6))
+#define LED_B1_Toggle()            (LATKINV= (1<<6))
+#define LED_B1_OutputEnable()      (TRISKCLR = (1<<6))
+#define LED_B1_InputEnable()       (TRISKSET = (1<<6))
+#define LED_B1_Get()               ((PORTK >> 6) & 0x1)
+#define LED_B1_PIN                  GPIO_PIN_RK6
+
 /*** Macros for SCL1_TEST pin ***/
 #define SCL1_TEST_Get()               ((PORTA >> 14) & 0x1)
 #define SCL1_TEST_PIN                  GPIO_PIN_RA14
@@ -542,6 +569,15 @@
 /*** Macros for U5TX_TEST pin ***/
 #define U5TX_TEST_Get()               ((PORTF >> 0) & 0x1)
 #define U5TX_TEST_PIN                  GPIO_PIN_RF0
+
+/*** Macros for LED_B0 pin ***/
+#define LED_B0_Set()               (LATKSET = (1<<7))
+#define LED_B0_Clear()             (LATKCLR = (1<<7))
+#define LED_B0_Toggle()            (LATKINV= (1<<7))
+#define LED_B0_OutputEnable()      (TRISKCLR = (1<<7))
+#define LED_B0_InputEnable()       (TRISKSET = (1<<7))
+#define LED_B0_Get()               ((PORTK >> 7) & 0x1)
+#define LED_B0_PIN                  GPIO_PIN_RK7
 
 /*** Macros for LS1 pin ***/
 #define LS1_Set()               (LATASET = (1<<7))

@@ -25,7 +25,7 @@
 // **** END GLOBAL INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
-
+#define PTX_PRX_TEST_PACKET_SIZE (12u) // NOTE: the size include 3 byte FIFO DATA command that is also transmitted
 // **** END GLOBAL MACROS ****
 
 #ifdef	__cplusplus
@@ -51,12 +51,15 @@ extern "C" {
 //    void AX_InitRxRegisters(void);
     
     void AX_CommTask(void);
-    int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
     
     uint16_t GetState(void); // TODO: Delete
+    void SetDebugLEDs(uint8_t val);
+    int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
+    int AX_TransmitPacket_TEMP(uint8_t* txPacket, uint8_t length);
     void AX_Receive(void);
     
     extern bool AX_EnqueuePacket(uint8_t* txPacket, uint8_t length);
+    
     // **** END GLOBAL FUNCTION PROTOTYPES ****
     // -------------------------------------------------------------------------
 #ifdef	__cplusplus

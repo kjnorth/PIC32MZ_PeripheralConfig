@@ -66,7 +66,7 @@ uint32_t PtxAckTimeoutStartTimeMs = 0;
 // PRX
 
 // common
-ax_tx_state_t CommState;
+volatile ax_tx_state_t CommState;
 volatile bool XtalReady = false;
 volatile bool TxComplete = false;
 volatile bool DataAvailable = false;
@@ -177,6 +177,7 @@ bool AX_Init(ax_mode_t _mode) {
     } else if (Mode == AX_MODE_PRX) {
         CommState = WAIT_RECEIVE;
         AX_InitRxRegisters();
+        AX_Write16(AX_REG_IRQMASK, 0x00); // TODO: REMOVE THIS AFTER TESTING
     }
 
     /* attach callback and enable interrupt on the chip's IRQ pin */
@@ -195,8 +196,6 @@ void AX_CommTask(void) {
         case IDLE:
             if (!AX_IsQueueEmpty()) {
                 CommState = WAIT_XTAL;
-                /* Enable crystal oscillator interrupt */
-                AX_Write16(AX_REG_IRQMASK, AX_IRQMXTALREADY);
                 
                 /* Clear FIFO */
                 AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
@@ -206,6 +205,9 @@ void AX_CommTask(void) {
 
                 /* enable the oscillator */
                 AX_EnableOscillator();
+                
+                /* Enable crystal oscillator interrupt */
+                AX_Write16(AX_REG_IRQMASK, AX_IRQMXTALREADY);
             }
             break;
         case WAIT_XTAL:
@@ -215,7 +217,7 @@ void AX_CommTask(void) {
                 /* clear crystal oscillator interrupt mask */
                 AX_Write16(AX_REG_IRQMASK, 0x00);
                 
-                /* write and commit packet to the FIFO */
+                /* write packet to the FIFO */
                 uint8_t* pTxPacket = NULL, length = 0;
                 AX_DequeuePacket(&pTxPacket, &length);
                 if (pTxPacket) {
@@ -305,7 +307,99 @@ void AX_CommTask(void) {
     }
 }
 
+void SetDebugLEDs(uint8_t val) {
+    if (val > 15) {
+        debug("SetDebugLEDs ERROR val passed is too large\n");
+        return;
+    }
+    GPIO_PortWrite(GPIO_PORT_K, 0xF0, (val << 4));
+}
+
+int AX_TransmitPacket_TEMP(uint8_t* txPacket, uint8_t length) {
+    uint8_t returnVal = 0;
+    /* ORDER in example code:
+     * prepare_tx() sets xtal_on (standby), then fifo_on, inits tx registers, sets state to xtalwait, enables xtal ready irq
+     * xtal ready fires -> clear radioeventreq, clear fifo, set state to trxstate_tx_longpreamble...
+     * ... transmit_isr() is called ... pwrmode set to full tx
+     */
+    
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+    /* enable the oscillator */
+    AX_EnableOscillator();
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+    AX_InitTxRegisters();
+    /* Wait for oscillator to start running  */
+    SetDebugLEDs(1);
+    while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
+
+    /* Clear FIFO */
+    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+
+    /* write preamble and packet to FIFO */
+    AX_WritePacketToFifo(txPacket, length);
+
+    /* commit packet to the FIFO for tx */
+    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
+    
+    /* Place chip in FULLTX mode with crystal oscillator and reference circuitry enabled */
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
+    
+    /* wait for tx to complete */
+    SetDebugLEDs(2);
+    while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
+    returnVal = 1;
+    LED1_Toggle();
+    
+    /*
+    if (Mode == AX_MODE_PTX) {
+        PtxAckTimeoutStartTimeMs = Time_GetMs();
+        // switch into Rx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        SetDebugLEDs(3);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitRxRegisters();
+
+        SetDebugLEDs(4);
+        while (1) {
+            uint8_t fifostat = AX_Read8(AX_REG_FIFOSTAT);
+            if ((fifostat & AX_FIFO_EMPTY) == 0) {
+                // fifo is not empty
+                LED1_Toggle();
+                // empty fifo
+                uint16_t cntRead = 0;
+                uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+                do {
+                    buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
+                    cntRead++;
+                } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
+                Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+                static int i = 1;
+                Print_EnqueueMsg("transmit success %u, response time %ums\n", i++, (Time_GetMs() - PtxAckTimeoutStartTimeMs));
+                break;
+            } else if (Mode == AX_MODE_PTX) {
+                if ((Time_GetMs() - PtxAckTimeoutStartTimeMs) >= AX_PTX_ACK_TIMEOUT_MS) {
+                    debug("timeout waiting for ack\n");
+                    break;
+                }
+            }
+        }
+
+        // switch back into Tx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        SetDebugLEDs(5);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//        AX_InitTxRegisters();
+    } */
+    
+    return returnVal;
+}
+
 /* blocking transmit */
+// Tx code works fine until mode switch to receive ack is enabled
 int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     uint8_t returnVal = 0;
 
@@ -320,30 +414,156 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
 
     /* Wait for FIFO power ready */
     while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
+    
+    if (Mode == AX_MODE_PRX) {
+        AX_InitTxRegisters();
+    }
 
     /* write preamble and packet to FIFO */
     AX_WritePacketToFifo(txPacket, length);
     /* Wait for oscillator to start running  */
-    // block for now, can config to be interrupt driven later
     while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
 
     /* commit packet to the FIFO for tx */
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
+//    debug("fifo test after commit - fifocount %u, fifofree %u\n", AX_Read16(AX_REG_FIFOCOUNT), AX_Read16(AX_REG_FIFOFREE));
 
     /* wait for tx to complete */
-    // block for now, can config to be interrupt driven later
     while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
     returnVal = 1;
-
-    /* disable the TCXO if used */
-    // TODO
     
-    /* Place chip in POWERDOWN mode */
-//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+//    debug("fifo test after tx complete - fifocount %u, fifofree %u\n", AX_Read16(AX_REG_FIFOCOUNT), AX_Read16(AX_REG_FIFOFREE));
+    
+    if (Mode == AX_MODE_PTX) {
+        LED1_Toggle();
+    /*
+        PtxAckTimeoutStartTimeMs = Time_GetMs(); // MIGHT BE DOING THIS WRONG - EASY AX JUST SWITCHES FROM TX TO RX WITH NO STANDBY/POWERDOWN
+        // switch into Rx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        SetDebugLEDs(4);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitRxRegisters();
 
-    LED1_Toggle();
+        SetDebugLEDs(5);
+        while (1) {
+            uint8_t fifostat = AX_Read8(AX_REG_FIFOSTAT);
+            if ((fifostat & AX_FIFO_EMPTY) == 0) {
+                // fifo is not empty
+                LED1_Toggle();
+                // empty fifo
+                uint16_t cntRead = 0;
+                uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+                do {
+                    buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
+                    cntRead++;
+                } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
+                Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+                static int i = 1;
+                Print_EnqueueMsg("transmit success %u, response time %ums\n", i++, (Time_GetMs() - PtxAckTimeoutStartTimeMs));
+                break;
+            } else if (Mode == AX_MODE_PTX) {
+                if ((Time_GetMs() - PtxAckTimeoutStartTimeMs) >= AX_PTX_ACK_TIMEOUT_MS) {
+                    debug("timeout waiting for ack\n");
+                    break;
+                }
+            }
+        }
 
+        // switch back into Tx mode
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        SetDebugLEDs(6);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitTxRegisters();
+     * //*/
+        
+        // shutdown
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        AX_Write16(AX_REG_IRQMASK, 0x0000);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+    //    AX_Write8(AX_REG_LPOSCCONFIG, 0x00);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+    }
+    
+    
     return returnVal;
+}
+
+/* poll for data available, then blocking switch to Tx mode and transmit ACK */
+void AX_Receive(void) {
+    uint16_t stat;
+    static uint8_t tempstat = 0; 
+    stat = AX_Read8(AX_REG_FIFOSTAT);
+    if ((stat & 0x01) == 0) { // use if polling fifostat register
+        // fifo is not empty
+        LED1_Toggle();
+        // empty fifo
+        uint16_t cntRead = 0, cntAvailable = 0;
+        cntAvailable = AX_Read16(AX_REG_FIFOCOUNT);
+        
+        debug("num bytes available %u\n", cntAvailable);
+        
+        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
+        SetDebugLEDs(tempstat | 1);      
+        
+        do {
+            buf[cntRead] = AX_Read8(AX_REG_FIFODATA); // possible null pointer exception if loop for more than print_buffer_sizE!
+            cntRead++;
+        } while (((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY) || (cntRead >= PRINT_BUFFER_SIZE));
+        
+        stat = AX_Read16(AX_REG_IRQREQUEST);
+        if (cntRead > PTX_PRX_TEST_PACKET_SIZE) {
+            // extra bytes in fifo somehow
+            tempstat = 8;
+            debug("EXTRA LARGE PACKET size %u\n", cntRead);
+            Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+        }
+
+        //* this seems to be working fine
+        // switch into Tx mode
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        // try more advanced shutdown!!!!!!!!!!!!!!!!!!!!
+        AX_Write16(AX_REG_IRQMASK, 0x0000);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+//        AX_Write8(AX_REG_LPOSCCONFIG, 0x00);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+        
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        SetDebugLEDs(tempstat | 2);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//        AX_InitTxRegisters();
+
+        // write an ack packet
+        uint8_t packet[9] = {0x09, 0x32, 0x34, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD};
+        static uint16_t counter = 0;
+        counter++;
+        packet[3] = (uint8_t) (counter & 0x00FF);
+        packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
+        SetDebugLEDs(tempstat | 3);
+        AX_TransmitPacket(packet, 9);
+        
+        // I THINK I SHOULD AT LEAST CLEAR THE FIFO BEFORE SWITCHING BACK INTO RX MODE IN AN ATTEMPT TO PREVENT THE 0xCC FROM APPEARING OCCASIONALLY
+        
+
+        // switch back into Rx mode
+// disabling these as a test        // SHOULDN'T NEED THESE BECAUSE TX OF ACK POWERS DOWN AT THE END
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+//        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+//        SetDebugLEDs(tempstat | 4);
+//        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+// disabled up to here        
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        AX_InitRxRegisters();
+        AX_Write16(AX_REG_IRQMASK, 0x00); // clear interrupt set in function above because we don't use it when polling // REMOVE AFTER TESTING
+        //*/
+
+        static int i = 1;
+        Print_EnqueueMsg("time %lum, repeat %u, cntRead of above pkt %u\n", (Time_GetMs() / 60000), i++, cntRead);
+    }
 }
 
 // **** MODULE FUNCTION IMPLEMENTATIONS ****
@@ -378,6 +598,7 @@ void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
     
     memcpy(fifoBytes+cnt, txPacket, length);
     AX_WriteFifo(fifoBytes, cnt+length);
+//    debug("fifo test after bytes written in (before commit) - fifocount %u, fifofree %u\n", AX_Read16(AX_REG_FIFOCOUNT), AX_Read16(AX_REG_FIFOFREE));
 }
 
 void AX_IRQ_Handler(GPIO_PIN pin, uintptr_t context) {
@@ -484,10 +705,12 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_PKTADDRCFG, 0x01); // address bytes must start at position 1 in the buffer that is transmitted
     AX_Write8(AX_REG_PKTLENCFG, 0x80); // all bits in length byte are significant // does LEN POS of 0 mean pkt length must be in 0th pos of Tx buffer?
     AX_Write8(AX_REG_PKTLENOFFSET, 0x00);
-    AX_Write8(AX_REG_PKTMAXLEN, AX_FIFO_MAX_SIZE);
+//    AX_Write8(AX_REG_PKTMAXLEN, AX_FIFO_MAX_SIZE);
     if (Mode == AX_MODE_PTX) {
+        AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE);
         AX_Write32(AX_REG_PKTADDR, PTX_PKTADDR);
     } else if (Mode == AX_MODE_PRX) {
+        AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE);
         AX_Write32(AX_REG_PKTADDR, PRX_PKTADDR);
     }
     AX_Write32(AX_REG_PKTADDRMASK, 0x0000FFFF);
@@ -639,43 +862,3 @@ int16_t AX_TuneVoltage(void) {
     return r;
 }
 // **** END MODULE FUNCTION IMPLEMENTATIONS ****
-
-/* poll for data available, then blocking switch to Tx mode and transmit ACK */
-void AX_Receive(void) {
-    uint8_t fifostat = AX_Read8(AX_REG_FIFOSTAT);
-    if ((fifostat & AX_FIFO_EMPTY) == 0) {
-        // fifo is not empty
-        LED1_Toggle();
-        // empty fifo
-        uint16_t cntRead = 0;
-        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
-        do {
-            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
-            cntRead++;
-        } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
-        Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
-
-        // switch into Tx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
-        AX_InitTxRegisters();
-
-        /* write an ack packet */
-        uint8_t packet[9] = {0x09, 0x32, 0x34, 0x00, 0x00, 0xAA, 0xBB, 0xCC, 0xDD};
-        static uint16_t counter = 0;
-        counter++;
-        packet[3] = (uint8_t) (counter & 0x00FF);
-        packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
-        AX_TransmitPacket(packet, 9);
-
-        // switch back into Rx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
-        AX_InitRxRegisters();
-
-        static int i = 1;
-        Print_EnqueueMsg("repeat %u\n", i++);
-    }
-}
