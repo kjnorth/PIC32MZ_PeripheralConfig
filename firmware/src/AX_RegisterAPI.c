@@ -324,13 +324,18 @@ bool AX_SPITest(uint16_t reg, uint8_t value) {
 // **** MODULE FUNCTION IMPLEMENTATIONS ****
 bool IsSPIBusy(void) {
     // return true if the SPI SS line is active (LOW)
-    return (SPI1_SS_Get() == false);
+    return (SPI1_SS_Get() == 0);
+}
+
+bool IsSPIIdle(void) {
+    // return true if the SPI SS line is inactive (HIGH)
+    return (SPI1_SS_Get() == 1);
 }
 
 void AX_SPI_Transfer(unsigned char* data, uint8_t length) {
     static unsigned char dataToReceive[256];
     SPI1_WriteRead(data, length, dataToReceive, length);
     memcpy(data, dataToReceive, length);
-    while (IsSPIBusy()) {};
+    while (!IsSPIIdle()) {};
 }
 // **** END MODULE FUNCTION IMPLEMENTATIONS ****

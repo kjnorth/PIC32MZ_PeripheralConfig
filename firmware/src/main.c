@@ -35,6 +35,8 @@
 // **** AX RECEIVER MACRO HERE ****
 #define AX_RECEIVER
 // ********************************
+extern uint32_t G_RxCount;
+uint32_t PreRxCount = 0;
 
 uint16_t g_adc_count = 0;
 volatile uint8_t curDutyCycle = 0;
@@ -69,6 +71,7 @@ int main(int argc, char** argv) {
     } else {
         Print_EnqueueMsg("ax init falied!\n");
         while (1) {
+            Print_Task();
             unsigned long ct = Time_GetMs();
             static unsigned long pt = 0;
             if (ct - pt >= 250) {
@@ -94,10 +97,11 @@ int main(int argc, char** argv) {
             AX_Receive();
         }
         
-        if (curTime - preLogTime >= 5000) {
+        if (curTime - preLogTime >= 120000) {
             preLogTime = curTime;
-            Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n",
-                    (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
+            Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, fifostat 0x%02X, rx status %u\n",
+                    (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT), (G_RxCount > PreRxCount));
+            PreRxCount = G_RxCount;
         }
 //#if defined(AX_RECEIVER)
 
@@ -108,7 +112,7 @@ int main(int argc, char** argv) {
         if (ct - pt >= 1000) {
             Print_EnqueueMsg("alive for %lum\n", (Time_GetMs() / 60000));
             pt = ct;
-            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0x55, 0x66, 0x77, 0x88 };
+            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0xFF, 0x66, 0x77, 0x88 };
             static uint16_t counter = 0;
             counter++;
             packet[3] = (uint8_t) (counter & 0x00FF);

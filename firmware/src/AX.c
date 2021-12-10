@@ -33,6 +33,8 @@
 #else
 #define debug(...)
 #endif
+
+#define DEV_KIT_TX
 // **** END MODULE MACROS ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
@@ -116,16 +118,26 @@ void AX_ClearTxRxDoneIRQ(void) {
 }
 
 bool AX_Init(ax_mode_t _mode) {
+    // reset the chip first
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_RST);
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+    
+    unsigned long start = Time_GetMs();
+    while ((Time_GetMs() - start) < 10) {};
+    
     Mode = _mode;
     uint8_t revision = 0, scratch = 0;
+    uint8_t revision2 = 0, scratch2 = 0;
     revision = AX_Read8(AX_REG_SILICONREVISION);
+    revision2 = AX_Read8(AX_REG_SILICONREVISION);
     scratch = AX_Read8(AX_REG_SCRATCH);
-    if ((revision != AX_SILICONREVISION) || (scratch != AX_SCRATCH)) {
+    scratch2 = AX_Read8(AX_REG_SCRATCH);
+    if ((revision2 != AX_SILICONREVISION) || (scratch2 != AX_SCRATCH)) {
         // chip likely dead or not connected
         debug("ax chip not found... revision 0x%02X, scratch 0x%02X\n", revision, scratch);
+        debug("ax chip not found... revision 0x%02X, scratch 0x%02X\n", revision2, scratch2);
         return false;
     }
-    // TODO: reset chip now?
         
     AX_InitConfigRegisters();
     AX_InitTxRegisters();
@@ -157,7 +169,7 @@ bool AX_Init(ax_mode_t _mode) {
     AX_Write8(AX_REG_PLLLOOP, 0x0D);
     AX_Write8(AX_REG_0xF35, 0x92);
     
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_SYNTHTX);
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_SYNTHTX);
     uint8_t vcoiSave = AX_Read8(AX_REG_PLLVCOI);
     AX_Write8(AX_REG_PLLRANGINGA, PllRangingA & 0x0F);
     
@@ -169,7 +181,7 @@ bool AX_Init(ax_mode_t _mode) {
     }
     
     AX_Write8(AX_REG_PLLVCOI, vcoiSave);
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_POWERDOWN);
     AX_InitConfigRegisters(); // must re-init registers after VCOI calibration
     
     if (Mode == AX_MODE_PTX) {
@@ -249,7 +261,7 @@ void AX_CommTask(void) {
                 
                 /* switch back into rx mode */
                 CommState = WAIT_RECEIVE;
-                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+                AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_POWERDOWN);
                 AX_InitRxRegisters(); // enables FIFO not empty interrupt
 
                 if (Mode == AX_MODE_PTX) {
@@ -323,17 +335,17 @@ int AX_TransmitPacket_TEMP(uint8_t* txPacket, uint8_t length) {
      * ... transmit_isr() is called ... pwrmode set to full tx
      */
     
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
     /* enable the oscillator */
-    AX_EnableOscillator();
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//    AX_EnableOscillator();
+//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON);
     AX_InitTxRegisters();
-    /* Wait for oscillator to start running  */
-    SetDebugLEDs(1);
+    /* Wait for oscillator to start running */
+//    SetDebugLEDs(1);
     while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
 
     /* Clear FIFO */
-    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+//    AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
 
     /* write preamble and packet to FIFO */
     AX_WritePacketToFifo(txPacket, length);
@@ -345,20 +357,23 @@ int AX_TransmitPacket_TEMP(uint8_t* txPacket, uint8_t length) {
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLTX);
     
     /* wait for tx to complete */
-    SetDebugLEDs(2);
+//    SetDebugLEDs(2);
     while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
     returnVal = 1;
-    LED1_Toggle();
+    
+    if (Mode == AX_MODE_PTX) {
+        LED1_Toggle();
+    }
     
     /*
     if (Mode == AX_MODE_PTX) {
         PtxAckTimeoutStartTimeMs = Time_GetMs();
         // switch into Rx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
         AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
         SetDebugLEDs(3);
         while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON);
         AX_InitRxRegisters();
 
         SetDebugLEDs(4);
@@ -387,11 +402,11 @@ int AX_TransmitPacket_TEMP(uint8_t* txPacket, uint8_t length) {
         }
 
         // switch back into Tx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
         AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
         SetDebugLEDs(5);
         while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON);
 //        AX_InitTxRegisters();
     } */
     
@@ -439,11 +454,11 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     /*
         PtxAckTimeoutStartTimeMs = Time_GetMs(); // MIGHT BE DOING THIS WRONG - EASY AX JUST SWITCHES FROM TX TO RX WITH NO STANDBY/POWERDOWN
         // switch into Rx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
         AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
         SetDebugLEDs(4);
         while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON);
         AX_InitRxRegisters();
 
         SetDebugLEDs(5);
@@ -472,45 +487,46 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
         }
 
         // switch back into Tx mode
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
         AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
         SetDebugLEDs(6);
         while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON);
         AX_InitTxRegisters();
      * //*/
         
         // shutdown
         AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
         AX_Write16(AX_REG_IRQMASK, 0x0000);
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-    //    AX_Write8(AX_REG_LPOSCCONFIG, 0x00);
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_POWERDOWN);
     }
-    
     
     return returnVal;
 }
+
+uint32_t G_RxCount = 0;
+// added reset of chip, different SPI wait until not busy implementation (the latter probably more likely to kill comm earlier)
 
 /* poll for data available, then blocking switch to Tx mode and transmit ACK */
 void AX_Receive(void) {
     uint16_t stat;
     static uint8_t tempstat = 0; 
     stat = AX_Read8(AX_REG_FIFOSTAT);
-    if ((stat & 0x01) == 0) { // use if polling fifostat register
+    if ((stat & 0x01) == 0) {
         // fifo is not empty
         LED1_Toggle();
+        G_RxCount++;
         // empty fifo
-        uint16_t cntRead = 0, cntAvailable = 0;
-        cntAvailable = AX_Read16(AX_REG_FIFOCOUNT);
+        uint16_t cntRead = 0;
         
-        debug("num bytes available %u\n", cntAvailable);
+//        static int i = 1;
+//        debug("received count %u, bytes available %u\n", i++, AX_Read16(AX_REG_FIFOCOUNT));
         
-        uint8_t buf[PRINT_BUFFER_SIZE] = {0};
-        SetDebugLEDs(tempstat | 1);      
-        
+        uint8_t buf[PRINT_BUFFER_SIZE];
+        SetDebugLEDs(tempstat | 1);        
         do {
-            buf[cntRead] = AX_Read8(AX_REG_FIFODATA); // possible null pointer exception if loop for more than print_buffer_sizE!
+            buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
             cntRead++;
         } while (((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY) || (cntRead >= PRINT_BUFFER_SIZE));
         
@@ -521,20 +537,19 @@ void AX_Receive(void) {
             debug("EXTRA LARGE PACKET size %u\n", cntRead);
             Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
         }
-
-        //* this seems to be working fine
-        // switch into Tx mode
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-        // try more advanced shutdown!!!!!!!!!!!!!!!!!!!!
-        AX_Write16(AX_REG_IRQMASK, 0x0000);
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-//        AX_Write8(AX_REG_LPOSCCONFIG, 0x00);
-        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_POWERDOWN);
         
-        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
         SetDebugLEDs(tempstat | 2);
+        /* this is working mostly fine
+        // switch into Tx mode
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        AX_Write16(AX_REG_IRQMASK, 0x0000);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
+        
         while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
+        
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON); // this is new
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_POWERDOWN);
+        
 //        AX_InitTxRegisters();
 
         // write an ack packet
@@ -544,25 +559,21 @@ void AX_Receive(void) {
         packet[3] = (uint8_t) (counter & 0x00FF);
         packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
         SetDebugLEDs(tempstat | 3);
-        AX_TransmitPacket(packet, 9);
-        
-        // I THINK I SHOULD AT LEAST CLEAR THE FIFO BEFORE SWITCHING BACK INTO RX MODE IN AN ATTEMPT TO PREVENT THE 0xCC FROM APPEARING OCCASIONALLY
-        
+        AX_TransmitPacket_TEMP(packet, 9);
 
         // switch back into Rx mode
-// disabling these as a test        // SHOULDN'T NEED THESE BECAUSE TX OF ACK POWERS DOWN AT THE END
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
-//        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
-//        SetDebugLEDs(tempstat | 4);
-//        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
-// disabled up to here        
-//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON);
-        AX_InitRxRegisters();
-        AX_Write16(AX_REG_IRQMASK, 0x00); // clear interrupt set in function above because we don't use it when polling // REMOVE AFTER TESTING
-        //*/
+        AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
+        AX_Write16(AX_REG_IRQMASK, 0x0000);
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
 
-        static int i = 1;
-        Print_EnqueueMsg("time %lum, repeat %u, cntRead of above pkt %u\n", (Time_GetMs() / 60000), i++, cntRead);
+        SetDebugLEDs(tempstat | 4);
+        while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) == AX_POWSTAT_SVMODEM) {}; // wait for svmodem bit to be cleared
+        
+        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON); // this is new
+//        AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_POWERDOWN);
+        AX_InitRxRegisters();
+        AX_Write16(AX_REG_IRQMASK, 0x00); // clear interrupt set in function above because we don't use it when polling // REMOVE AFTER TESTING, need to remove in init function also
+        //*/
     }
 }
 
@@ -586,9 +597,17 @@ void AX_WritePacketToFifo(uint8_t* txPacket, uint8_t length) {
     fifoBytes[cnt++] = AX_FIFO_CHUNK_DATA;
     fifoBytes[cnt++] = 5; // preamble length of 4 bytes + fifo command flag byte
     fifoBytes[cnt++] = AX_FIFO_TXDATA_UNENC | AX_FIFO_TXDATA_RAW | AX_FIFO_TXDATA_NOCRC;
+#ifdef DEV_KIT_TX
     fifoBytes[cnt++] = 0xCC;
+#else
+    fifoBytes[cnt++] = 0x55;
+#endif
     fifoBytes[cnt++] = 0xAA;
+#ifdef DEV_KIT_TX
     fifoBytes[cnt++] = 0xCC;
+#else
+    fifoBytes[cnt++] = 0x55;
+#endif
     fifoBytes[cnt++] = 0xAA;
 
     /* write commands to fifo to prepare it for the incoming packet */
@@ -631,7 +650,7 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_POWIRQMASK, 0x00); // power related interrupts
     AX_Write16(AX_REG_IRQMASK, 0x0000);
     AX_Write16(AX_REG_RADIOEVENTMASK, 0x00); // enable more interrupts with this register
-    AX_Write8(AX_REG_MODULATION, 0x08);
+    AX_Write8(AX_REG_MODULATION, 0x08); // FSK modulation
     AX_Write8(AX_REG_ENCODING, 0x00);
     AX_Write8(AX_REG_FRAMING, 0x26);
     AX_Write8(AX_REG_PINFUNCSYSCLK, 0x04); // set to output frequency of oscillator used (either internal or TCXO)
@@ -707,14 +726,18 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_PKTLENOFFSET, 0x00);
 //    AX_Write8(AX_REG_PKTMAXLEN, AX_FIFO_MAX_SIZE);
     if (Mode == AX_MODE_PTX) {
-        AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE);
+        AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE); // PKTMAXLEN includes 3 byte FIFODATA command + data packet length
         AX_Write32(AX_REG_PKTADDR, PTX_PKTADDR);
     } else if (Mode == AX_MODE_PRX) {
-        AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE);
+        AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE); // PKTMAXLEN includes 3 byte FIFODATA command + data packet length
         AX_Write32(AX_REG_PKTADDR, PRX_PKTADDR);
     }
     AX_Write32(AX_REG_PKTADDRMASK, 0x0000FFFF);
+#ifdef DEV_KIT_TX
     AX_Write32(AX_REG_MATCH0PAT, 0xAACCAACC); // this is preamble0 that Rx uses to detect/accept an incoming packet
+#else
+    AX_Write32(AX_REG_MATCH0PAT, 0xAA55AA55); // this is preamble0 that Rx uses to detect/accept an incoming packet
+#endif
     AX_Write8(AX_REG_MATCH0LEN, 0x1F);
     AX_Write8(AX_REG_MATCH0MAX, 0x1F); // this says at least 31 bits of match0 pattern must match
     AX_Write16(AX_REG_MATCH1PAT, 0x5555); // this is preamble1 that Rx uses to detect/accept an incoming packet
@@ -797,10 +820,10 @@ void AX_InitRxRegisters(void) {
 }
 
 void AX_RxSwitchToTx(void) {
-    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_STANDBY);
+    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_STANDBY);
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
     while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != 0) {}; // wait for SVMODEM bit to be cleared
-//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_FIFOON); // their code does not do this
+//    AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FIFOON); // their code does not do this
     AX_InitTxRegisters();
 }
 
