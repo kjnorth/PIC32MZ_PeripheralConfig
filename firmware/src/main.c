@@ -33,7 +33,7 @@
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
 // **** AX RECEIVER MACRO HERE ****
-#define AX_RECEIVER
+//#define AX_RECEIVER
 // ********************************
 extern uint32_t G_RxCount;
 uint32_t PreRxCount = 0;

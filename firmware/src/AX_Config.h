@@ -21,7 +21,7 @@
 
 // properties configurable by the developer
 #define PTX_PKTADDR (0x00003432u)
-#define AX_PTX_ACK_TIMEOUT_MS (200u)
+#define AX_PTX_ACK_TIMEOUT_MS (100u)
 
 #define PRX_PKTADDR (0x00003433u)
 

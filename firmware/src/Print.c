@@ -112,12 +112,12 @@ void Print_EnqueueBuffer(uint8_t* b, uint8_t len) {
         return;
     }
     // 32 bytes of buf per message
-    uint8_t i;
-    for (i = 0; i < 1/*PRINT_BUFFER_SIZE*/; i += 32) {
-        Print_EnqueueMsg("%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
-                b[i], b[i+1], b[i+2], b[i+3], b[i+4], b[i+5], b[i+6], b[i+7], b[i+8], b[i+9], b[i+10], b[i+11], b[i+12], b[i+13], b[i+14], b[i+15],
-                b[i+16], b[i+17], b[i+18], b[i+19], b[i+20], b[i+21], b[i+22], b[i+23], b[i+24], b[i+25], b[i+26], b[i+27], b[i+28], b[i+29], b[i+30], b[i+31]);
-    } 
+//    uint8_t i;
+//    for (i = 0; i < 1/*PRINT_BUFFER_SIZE*/; i += 32) {
+//        Print_EnqueueMsg("%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n%02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X %02X\n",
+//                b[i], b[i+1], b[i+2], b[i+3], b[i+4], b[i+5], b[i+6], b[i+7], b[i+8], b[i+9], b[i+10], b[i+11], b[i+12], b[i+13], b[i+14], b[i+15],
+//                b[i+16], b[i+17], b[i+18], b[i+19], b[i+20], b[i+21], b[i+22], b[i+23], b[i+24], b[i+25], b[i+26], b[i+27], b[i+28], b[i+29], b[i+30], b[i+31]);
+//    } 
 }
 
 bool Print_DequeueMsg(char** msg, uint8_t* size) {
