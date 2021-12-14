@@ -46,16 +46,15 @@ extern "C" {
     // -------------------------------------------------------------------------
     // **** GLOBAL FUNCTION PROTOTYPES ****
     bool AX_Init(ax_mode_t _mode);
-//    void AX_InitConfigRegisters(void);
-//    void AX_InitTxRegisters(void);
-//    void AX_InitRxRegisters(void);
     
+    // interrupt driven
     void AX_CommTask(void);
     
     uint16_t GetState(void); // TODO: Delete
-    void SetDebugLEDs(uint8_t val);
+    void SetDebugLEDs(uint8_t val); // TODO: Delete
+    
+    // polling / blocking functions
     int AX_TransmitPacket(uint8_t* txPacket, uint8_t length);
-    int AX_TransmitPacket_TEMP(uint8_t* txPacket, uint8_t length);
     void AX_Receive(void);
     
     extern bool AX_EnqueuePacket(uint8_t* txPacket, uint8_t length);
