@@ -51,15 +51,19 @@ typedef struct {
 // **** MODULE GLOBAL VARIABLES ****
 static encoder_t Enc1;
 static encoder_t Enc2;
-static encoder_desc_t EncDescList[TOTAL_ENCODERS] = {
+static encoder_desc_t EncDescList[TOTAL_ENCODERS] = { // TODO: it makes more sense to create a descriptor of encoders... not of encoder pins to set
     {(encoder_t*) NULL, (GPIO_PIN) NULL, (GPIO_PIN) NULL}, // system_encoder_t values start at 1, so populate 0 index of this list with NULL
     {&Enc1, ENC1_A_TEST_PIN, ENC1_B_TEST_PIN},
     {&Enc2, ENC2_A_TEST_PIN, ENC2_B_TEST_PIN}
 };
+
+encoder_t EncList[TOTAL_ENCODERS] = {
+    
+};
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
-static void EncCallback(GPIO_PIN pin, uintptr_t context);
+void EncCallback(GPIO_PIN pin, uintptr_t context);
 // **** MODULE FUNCTION PROTOTYPES ****
 // -----------------------------------------------------------------------------
 

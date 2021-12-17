@@ -24,6 +24,7 @@
 
 #include "peripheral/gpio/plib_gpio.h"
 #include "Time.h"
+#include "peripheral/evic/plib_evic.h"
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE MACROS ****
@@ -184,16 +185,18 @@ bool AX_Init(ax_mode_t _mode) {
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_POWERDOWN);
     AX_InitConfigRegisters(); // must re-init registers after VCOI calibration
     
+    /* attach callback and enable interrupt on input IRQ pin */
+    GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_IRQ_Handler, (uintptr_t) NULL);
+    AX_IRQ_PIN_InterruptEnable();
+    
     if (Mode == AX_MODE_PTX) {
         CommState = IDLE;
     } else if (Mode == AX_MODE_PRX) {
         CommState = WAIT_RECEIVE;
         AX_InitRxRegisters();
+        /* enable FIFO not empty interrupt */
+        AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY);
     }
-
-    /* attach callback and enable interrupt on the chip's IRQ pin */
-    GPIO_PinInterruptCallbackRegister(AX_IRQ_PIN_PIN, AX_IRQ_Handler, (uintptr_t) NULL);
-    GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
     
     /* init the tx packet queue */
     AX_PacketQueue_Init();
@@ -204,6 +207,7 @@ bool AX_Init(ax_mode_t _mode) {
 uint32_t G_RxCount = 0;
 /* interrupt driven communication */
 void AX_CommTask(void) {
+    EVIC_SourceDisable(INT_SOURCE_CHANGE_NOTICE_A);
     switch (CommState) {
         case IDLE:
             if (!AX_IsQueueEmpty()) {
@@ -218,7 +222,8 @@ void AX_CommTask(void) {
                 /* enable the oscillator */
                 AX_EnableOscillator();
                 
-                /* Enable crystal oscillator interrupt */
+                /* enable crystal oscillator interrupt */
+//                GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
                 AX_Write16(AX_REG_IRQMASK, AX_IRQMXTALREADY);
             }
             break;
@@ -243,6 +248,7 @@ void AX_CommTask(void) {
                 /* make sure bits in RADIOEVENTREQ are cleared */
                 AX_Read8(AX_REG_RADIOEVENTREQ0);
                 /* enable Tx complete interrupt */
+//                GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
                 AX_Write8(AX_REG_RADIOEVENTMASK0, AX_REVMDONE);
                 AX_Write16(AX_REG_IRQMASK, AX_IRQMRADIOCTRL);
 
@@ -262,7 +268,11 @@ void AX_CommTask(void) {
                 /* switch back into rx mode */
                 CommState = WAIT_RECEIVE;
                 AX_PrepareForModeSwitch();
-                AX_InitRxRegisters(); // enables FIFO not empty interrupt
+                AX_InitRxRegisters();
+                
+                /* enable FIFO not empty interrupt */
+//                GPIO_PinInterruptEnable(AX_IRQ_PIN_PIN);
+                AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY);
 
                 if (Mode == AX_MODE_PTX) {
                     PtxAckTimeoutStartTimeMs = Time_GetMs();
@@ -318,6 +328,7 @@ void AX_CommTask(void) {
             }
             break;
     }
+    EVIC_SourceEnable(INT_SOURCE_CHANGE_NOTICE_A);
 }
 
 void SetDebugLEDs(uint8_t val) {
@@ -361,7 +372,6 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
         // switch into Rx mode
         AX_PrepareForModeSwitch();
         AX_InitRxRegisters();
-        AX_Write16(AX_REG_IRQMASK, 0x00); // clear interrupt set in function above because we don't use it when polling // REMOVE AFTER TESTING, need to remove in init function also
 
         SetDebugLEDs(5);
         while (1) {
@@ -439,7 +449,6 @@ void AX_Receive(void) {
         // switch back into Rx mode
         AX_PrepareForModeSwitch();
         AX_InitRxRegisters();
-        AX_Write16(AX_REG_IRQMASK, 0x00); // clear interrupt set in function above because we don't use it when polling // REMOVE AFTER TESTING, need to remove in init function also
     }
 }
 
@@ -671,8 +680,6 @@ void AX_InitRxRegisters(void) {
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS); // clear FIFO
     AX_Write8(AX_REG_PWRMODE, AX_PWRMODE_XOEN | AX_PWRMODE_REFEN | AX_PWRMODE_FULLRX); // set power mode to FULLRX
     AX_EnableOscillator();
-
-    AX_Write16(AX_REG_IRQMASK, AX_IRQMFIFONOTEMPTY); // enable FIFO not empty interrupt
 }
 
 void AX_PrepareForModeSwitch(void) {

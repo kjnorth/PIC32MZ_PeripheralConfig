@@ -89,13 +89,13 @@ int main(int argc, char** argv) {
         IMU_SampleTask();
         
 #if defined(AX_RECEIVER)
-//        AX_CommTask();
+        AX_CommTask();
         unsigned long curTime = Time_GetMs();      
         static unsigned long preCheckTime = 0;
         static unsigned long preLogTime = 0;
         if (curTime - preCheckTime >= 5) {
             preCheckTime = curTime;
-            AX_Receive();
+//            AX_Receive();
         }
         
         if (curTime - preLogTime >= 120000) {
@@ -120,9 +120,15 @@ int main(int argc, char** argv) {
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
             AX_EnqueuePacket(packet, 9);
 //            AX_TransmitPacket(packet, 9);
-            if ((counter % 600) == 0) {
-                Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, fifostat 0x%02X\n",
-                        (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), AX_Read8(AX_REG_FIFOSTAT));
+            if (G_RxCount > PreRxCount) {
+                LastCommTimeMin = Time_GetMs() / 60000;
+            }
+            if ((counter % 1200) == 0) { // 2 min log
+//            if ((counter % 100) == 0) { // 10 sec log
+                Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, last comm time %lum\n",
+                        (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), LastCommTimeMin);
+//                Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, iec3 0x%08X, ifs3 0x%08X, ax irq pin val %u,  last comm time %lum\n",
+//                        (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), IEC3, IFS3, AX_IRQ_PIN_Get(), LastCommTimeMin);
             }
         }
 #endif        
