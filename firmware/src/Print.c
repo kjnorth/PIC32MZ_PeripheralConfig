@@ -29,6 +29,7 @@
 
 #include "peripheral/gpio/plib_gpio.h"
 #include "peripheral/uart/plib_uart5.h"
+#include "peripheral/evic/plib_evic.h"
 
 // **** MODULE DEFINES ****
 #define PRINT_MAX_MSGS (50u)
@@ -148,6 +149,7 @@ void Print_Task(void) {
     static uint8_t response = 0;
     static uint32_t readStartTime = 0;
 
+    bool intState = EVIC_INT_Disable();
     if (Uart5.IsRxErrorDetected) {
         Uart5.IsRxErrorDetected = false;
         // do something to indicate that an error occurred and start over
@@ -209,6 +211,7 @@ void Print_Task(void) {
             Uart5.IsRxFinished = true; // set to true to send start byte again
         }
     }
+    EVIC_INT_Restore(intState);
 }
 
 /**

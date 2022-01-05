@@ -25,82 +25,106 @@
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE DEFINES ****
+#if defined(PL_MAIN_BOARD)
 
+#define NUM_APPLICATION_ENCODERS (6u)
+
+#elif defined(BR_MAIN_BOARD)
+
+#define NUM_APPLICATION_ENCODERS (2u)
+
+#else
+#define NUM_APPLICATION_ENCODERS (0u)
+#endif
 // **** END MODULE DEFINES ****
 // -----------------------------------------------------------------------------
 // **** MODULE TYPEDEFS ****
-
 typedef enum {
     A0B0, A0B1, A1B1, A1B0,
 } encoder_state_t;
 
 typedef struct {
+    encoder_id_t id;
     GPIO_PIN aPin;
     GPIO_PIN bPin;
     encoder_state_t curState;
-    int32_t count;
-} encoder_t;
-
-typedef struct {
-    encoder_t* enc;
-    GPIO_PIN aPinToSet;
-    GPIO_PIN bPinToSet;
-} encoder_desc_t;
+} encoder_descriptor_t;
 // **** END MODULE TYPEDEFS ****
 // -----------------------------------------------------------------------------
 // **** MODULE GLOBAL VARIABLES ****
-static encoder_t Enc1;
-static encoder_t Enc2;
-static encoder_desc_t EncDescList[TOTAL_ENCODERS] = { // TODO: it makes more sense to create a descriptor of encoders... not of encoder pins to set
-    {(encoder_t*) NULL, (GPIO_PIN) NULL, (GPIO_PIN) NULL}, // system_encoder_t values start at 1, so populate 0 index of this list with NULL
-    {&Enc1, ENC1_A_TEST_PIN, ENC1_B_TEST_PIN},
-    {&Enc2, ENC2_A_TEST_PIN, ENC2_B_TEST_PIN}
+#if defined(PL_MAIN_BOARD)
+
+encoder_descriptor_t G_EncoderDesc[NUM_APPLICATION_ENCODERS] = {
+    {ENC1, ENC1_A_TEST_PIN, ENC1_B_TEST_PIN, A0B0},
+    {ENC2, ENC2_A_TEST_PIN, ENC2_B_TEST_PIN, A0B0},
+    {ENC3, 0, 3, A0B0},
+    {ENC4, 0, 4, A0B0},
+    {ENC5, 0, 5, A0B0},
+    {ENC6, 0, 6, A0B0}
 };
 
-encoder_t EncList[TOTAL_ENCODERS] = {
-    
+#elif defined(BR_MAIN_BOARD)
+
+encoder_descriptor_t G_EncoderDesc[NUM_APPLICATION_ENCODERS] = {
+    {ENC9, ENC1_A_TEST_PIN, ENC1_B_TEST_PIN, A0B0},
+    {ENC10, ENC2_A_TEST_PIN, ENC2_B_TEST_PIN, A0B0}
 };
+
+#else
+encoder_descriptor_t G_EncoderDesc[NUM_APPLICATION_ENCODERS];
+#endif
+
+int32_t G_EncoderCounts[TOTAL_ENCODERS];
 // **** END MODULE GLOBAL VARIABLES ****
 // -----------------------------------------------------------------------------
 // **** MODULE FUNCTION PROTOTYPES ****
-void EncCallback(GPIO_PIN pin, uintptr_t context);
+void Encoders_InterruptHandler(GPIO_PIN pin, uintptr_t context);
 // **** MODULE FUNCTION PROTOTYPES ****
 // -----------------------------------------------------------------------------
 
 void Encoders_Init(void) {
     uint8_t i;
-    for (i = ENC1; i < TOTAL_ENCODERS; i++) {
-        encoder_t* enc = EncDescList[i].enc;
-        enc->aPin = EncDescList[i].aPinToSet;
-        enc->bPin = EncDescList[i].bPinToSet;
-        enc->curState = A0B0;
-        enc->count = 0;
-        GPIO_PinInterruptCallbackRegister(enc->aPin, EncCallback, (uintptr_t) enc);
-        GPIO_PinInterruptCallbackRegister(enc->bPin, EncCallback, (uintptr_t) enc);
+    for (i = 0; i < NUM_APPLICATION_ENCODERS; i++) {
+        encoder_descriptor_t* enc = &G_EncoderDesc[i];
+        
+        // determine the encoder's current state
+        bool A = GPIO_PinRead(enc->aPin);
+        bool B = GPIO_PinRead(enc->bPin);
+        if (A == 0) {
+            enc->curState = (B == 0) ? A0B0 : A0B1;
+        } else {
+            enc->curState = (B == 0) ? A1B0 : A1B1;
+        }
+        
+        // TODO: Pull previous encoder data from NVM
+//        G_EncoderCounts[enc->id] = ......
+        
+        GPIO_PinInterruptCallbackRegister(enc->aPin, Encoders_InterruptHandler, (uintptr_t) enc);
+        GPIO_PinInterruptCallbackRegister(enc->bPin, Encoders_InterruptHandler, (uintptr_t) enc);
         GPIO_PinInterruptEnable(enc->aPin);
         GPIO_PinInterruptEnable(enc->bPin);
     }
 }
 
-int32_t Encoders_GetCount(system_encoder_t enc) {
-    int32_t returnVal = 0;
-    if (enc < TOTAL_ENCODERS) {
-        returnVal = EncDescList[enc].enc->count;
-    }
-    return returnVal;
+void Encoders_SetCount(encoder_id_t id, int32_t count) {
+    G_EncoderCounts[id] = count;
+}
+
+int32_t Encoders_GetCount(encoder_id_t id) {
+    return G_EncoderCounts[id];
 }
 
 /**
  * E2 encoders - B leads A for clockwise shaft rotation, and A leads B for
  * counterclockwise rotation viewed from the cover/label side of the encoder
  */
-void EncCallback(GPIO_PIN pin, uintptr_t context) {
-    encoder_t* enc = (encoder_t*) context;
+void Encoders_InterruptHandler(GPIO_PIN pin, uintptr_t context) {
+    encoder_descriptor_t* enc = (encoder_descriptor_t*) context;
     uint8_t A = GPIO_PinRead(enc->aPin);
     uint8_t B = GPIO_PinRead(enc->bPin);
 
     encoder_state_t curState = enc->curState;
-    int32_t count = enc->count;
+    int32_t count = G_EncoderCounts[enc->id];
     switch (curState) {
         case A0B0:
             if ((A == 0) && (B == 1)) {
@@ -148,5 +172,5 @@ void EncCallback(GPIO_PIN pin, uintptr_t context) {
             break;
     }
     enc->curState = curState;
-    enc->count = count;
+    G_EncoderCounts[enc->id] = count;
 }

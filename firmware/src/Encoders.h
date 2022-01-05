@@ -28,19 +28,22 @@ extern "C" {
 #endif
 
     typedef enum {
-        ENC1 = 1,
+        ENC1 = 0u,
         ENC2,
-        TOTAL_ENCODERS, // only two encoders are wired up now. move down as more encoders are added
         ENC3,
         ENC4,
         ENC5,
         ENC6,
         ENC7,
         ENC8,
-    } system_encoder_t;
+        ENC9,
+        ENC10,
+        TOTAL_ENCODERS
+    } encoder_id_t;
 
     void Encoders_Init(void);
-    int32_t Encoders_GetCount(system_encoder_t enc);
+    void Encoders_SetCount(encoder_id_t id, int32_t count);
+    int32_t Encoders_GetCount(encoder_id_t id);
 
 #ifdef	__cplusplus
 }

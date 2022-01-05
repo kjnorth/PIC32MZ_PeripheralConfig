@@ -33,7 +33,7 @@
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
 // **** AX RECEIVER MACRO HERE ****
-#define AX_RECEIVER
+//#define AX_RECEIVER
 // ********************************
 extern uint32_t G_RxCount;
 uint32_t PreRxCount = 0;
@@ -50,9 +50,9 @@ bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t l
 int main(int argc, char** argv) {
     SYS_Initialize(NULL); // inits all peripherals - UART, SPI, TMR, OCMP, etc.
     LED1_Clear();
-    Encoders_Init();
+//    Encoders_Init();
     Print_Init();
-    IMU_Init();
+//    IMU_Init();
     ADCHS_CallbackRegister(ADCHS_CH3, ADCHS_Callback, (uintptr_t) NULL);
     TMR3_Start(); // for ADC    
     OCMP4_Enable();
@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
         Print_Task();
-        IMU_SampleTask();
+//        IMU_SampleTask();
         
 #if defined(AX_RECEIVER)
         AX_CommTask();
