@@ -14,7 +14,7 @@
 #include "AX_Registers.h"
 
 #include "peripheral/gpio/plib_gpio.h"
-#include "peripheral/spi/spi_master/plib_spi1_master.h"
+#include "peripheral/spi/spi_master/plib_spi4_master.h"
 #include "Time.h"
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
@@ -324,17 +324,17 @@ bool AX_SPITest(uint16_t reg, uint8_t value) {
 // **** MODULE FUNCTION IMPLEMENTATIONS ****
 bool IsSPIBusy(void) {
     // return true if the SPI SS line is active (LOW)
-    return (SPI1_SS_Get() == 0);
+    return (AX_SS_Get() == 0);
 }
 
 bool IsSPIIdle(void) {
     // return true if the SPI SS line is inactive (HIGH)
-    return (SPI1_SS_Get() == 1);
+    return (AX_SS_Get() == 1);
 }
 
 void AX_SPI_Transfer(unsigned char* data, uint8_t length) {
     static unsigned char dataToReceive[256];
-    SPI1_WriteRead(data, length, dataToReceive, length);
+    SPI4_WriteRead(data, length, dataToReceive, length);
     memcpy(data, dataToReceive, length);
     while (!IsSPIIdle()) {};
 }

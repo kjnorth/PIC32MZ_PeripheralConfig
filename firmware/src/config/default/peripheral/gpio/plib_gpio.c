@@ -71,7 +71,7 @@ void GPIO_Initialize ( void )
     PORTA;
     IEC3SET = _IEC3_CNAIE_MASK;
     /* PORTB Initialization */
-    ANSELBCLR = 0xf1f5; /* Digital Mode Enable */
+    ANSELBCLR = 0x71f5; /* Digital Mode Enable */
     /* PORTC Initialization */
     ANSELCCLR = 0x1e; /* Digital Mode Enable */
     /* PORTD Initialization */
@@ -115,8 +115,8 @@ void GPIO_Initialize ( void )
     C1RXR = 7;
     C2RXR = 11;
     U5RXR = 11;
+    SDI4R = 3;
     U1RXR = 2;
-    SDI1R = 3;
 
     /* PPS Output Remapping */
     RPE5R = 11;
@@ -131,9 +131,9 @@ void GPIO_Initialize ( void )
     RPC14R = 15;
     RPF3R = 15;
     RPF0R = 3;
+    RPD4R = 8;
+    RPD5R = 8;
     RPF5R = 1;
-    RPB15R = 5;
-    RPD11R = 5;
 
         /* Lock back the system after PPS configuration */
     CFGCONbits.IOLOCK = 1;

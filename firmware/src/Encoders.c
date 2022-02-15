@@ -25,6 +25,8 @@
 // **** END MODULE INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** MODULE DEFINES ****
+#define PL_MAIN_BOARD
+
 #if defined(PL_MAIN_BOARD)
 
 #define NUM_APPLICATION_ENCODERS (6u)
@@ -97,7 +99,7 @@ void Encoders_Init(void) {
         }
         
         // TODO: Pull previous encoder data from NVM
-//        G_EncoderCounts[enc->id] = ......
+        G_EncoderCounts[enc->id] = 0;
         
         GPIO_PinInterruptCallbackRegister(enc->aPin, Encoders_InterruptHandler, (uintptr_t) enc);
         GPIO_PinInterruptCallbackRegister(enc->bPin, Encoders_InterruptHandler, (uintptr_t) enc);

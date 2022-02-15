@@ -1,6 +1,6 @@
 format_version: v1.0
 type: UniqueComponent
-attributes: {id: spi1}
+attributes: {id: spi4}
 children:
 - type: Symbols
   children:
@@ -10,7 +10,7 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: spi1, value: 'true'}
+        attributes: {id: spi4, value: 'true'}
   - type: Integer
     attributes: {id: SPI_BAUD_RATE}
     children:
@@ -24,7 +24,7 @@ children:
     - type: Values
       children:
       - type: Dynamic
-        attributes: {id: spi1, value: '199'}
+        attributes: {id: spi4, value: '199'}
   - type: Boolean
     attributes: {id: SPI_INTERRUPT_MODE}
     children:
@@ -33,4 +33,4 @@ children:
       - type: User
         attributes: {value: 'false'}
 - type: ElementPosition
-  attributes: {x: '471', y: '100', id: spi1}
+  attributes: {x: '470', y: '100', id: spi4}

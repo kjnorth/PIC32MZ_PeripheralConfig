@@ -33,10 +33,11 @@
 #define PWM_MAX_DUTY_CYCLE      (100u)
 
 // **** AX RECEIVER MACRO HERE ****
-//#define AX_RECEIVER
+#define AX_RECEIVER
 // ********************************
 extern uint32_t G_RxCount;
 uint32_t PreRxCount = 0;
+extern uint32_t G_AckTimeouts;
 uint32_t LastCommTimeMin = 0;
 
 uint16_t g_adc_count = 0;
@@ -50,9 +51,9 @@ bool IsValueWithinRange(int32_t valueToCheck, int32_t valueForCompare, int32_t l
 int main(int argc, char** argv) {
     SYS_Initialize(NULL); // inits all peripherals - UART, SPI, TMR, OCMP, etc.
     LED1_Clear();
-//    Encoders_Init();
+    Encoders_Init();
     Print_Init();
-//    IMU_Init();
+    IMU_Init();
     ADCHS_CallbackRegister(ADCHS_CH3, ADCHS_Callback, (uintptr_t) NULL);
     TMR3_Start(); // for ADC    
     OCMP4_Enable();
@@ -75,27 +76,36 @@ int main(int argc, char** argv) {
             Print_Task();
             unsigned long ct = Time_GetMs();
             static unsigned long pt = 0;
-            if (ct - pt >= 250) {
+            if (ct - pt >= 500) {
                 pt = ct;
                 LED1_Toggle();
             }
         }
     }
+    LED1_Set();
     
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */
         SYS_Tasks();
         Print_Task();
-//        IMU_SampleTask();
+        IMU_SampleTask();
+        
+        // encoders test
+//        unsigned long ct = Time_GetMs();
+//        static unsigned long pt = 0;
+//        if (ct - pt >= 1000) {
+//            pt = ct;
+//            Print_EnqueueMsg("enc1 count %d, enc2 count %d\n", Encoders_GetCount(ENC1), Encoders_GetCount(ENC2));
+//        }
         
 #if defined(AX_RECEIVER)
-        AX_CommTask();
+//        AX_CommTask();
         unsigned long curTime = Time_GetMs();      
         static unsigned long preCheckTime = 0;
         static unsigned long preLogTime = 0;
         if (curTime - preCheckTime >= 5) {
             preCheckTime = curTime;
-//            AX_Receive();
+            AX_Receive();
         }
         
         if (curTime - preLogTime >= 120000) {
@@ -108,27 +118,26 @@ int main(int argc, char** argv) {
             PreRxCount = G_RxCount;
         }
 #else
-        AX_CommTask();
+//        AX_CommTask();
         unsigned long ct = Time_GetMs();
         static unsigned long pt = 0;
         if (ct - pt >= 100) {
             pt = ct;
-            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0xFF, 0x66, 0x77, 0x88 };
             static uint16_t counter = 0;
             counter++;
+            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0xFF, 0x66, 0x77, 0x88 };
             packet[3] = (uint8_t) (counter & 0x00FF);
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
-            AX_EnqueuePacket(packet, 9);
-//            AX_TransmitPacket(packet, 9);
-            if (G_RxCount > PreRxCount) {
-                LastCommTimeMin = Time_GetMs() / 60000;
-            }
+            AX_TransmitPacket(packet, 9);
+//            AX_EnqueuePacket(packet, 9);
             if ((counter % 1200) == 0) { // 2 min log
 //            if ((counter % 100) == 0) { // 10 sec log
-                Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, last comm time %lum\n",
-                        (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), LastCommTimeMin);
-//                Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, iec3 0x%08X, ifs3 0x%08X, ax irq pin val %u,  last comm time %lum\n",
-//                        (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), IEC3, IFS3, AX_IRQ_PIN_Get(), LastCommTimeMin);
+                if (G_RxCount > PreRxCount) {
+                    LastCommTimeMin = Time_GetMs() / 60000;
+                }
+                Print_EnqueueMsg("alive for %lum, CommState = %u, irqmask 0x%04X, last comm time %lum, total successes %lu, total ack timeouts %lu\n",
+                        (Time_GetMs() / 60000), GetState(), AX_Read16(AX_REG_IRQMASK), LastCommTimeMin, G_RxCount, G_AckTimeouts);
+                PreRxCount = G_RxCount;
             }
         }
 #endif        

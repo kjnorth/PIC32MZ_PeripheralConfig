@@ -5,11 +5,10 @@
  * Description: Masterhaul's implementation of a library to interface with
  * OnSemiconductor's cumbersome AX-5043/5243 transceivers.
  * 
- * This is currently designed to use the AX's internal oscillator and does not
- * support the use of an external oscillator at this time.
- * 
  * Module blocks when reading and writing via SPI, therefore SPI peripheral
  * configured with MHC should not be in interrupt mode.
+ * 
+ * NOTE: these AX chips are configured to transmit LSB of data first
  *
  * Created on October 28, 2021, 1:07 PM
  */
@@ -25,7 +24,7 @@
 // **** END GLOBAL INCLUDE DIRECTIVES ****
 // -----------------------------------------------------------------------------
 // **** GLOBAL MACROS ****
-#define PTX_PRX_TEST_PACKET_SIZE (12u) // NOTE: the size include 3 byte FIFO DATA command that is also transmitted
+#define PTX_PRX_TEST_PACKET_SIZE (100u) //12u) // NOTE: the size includes 3 byte FIFO DATA command that is also transmitted
 // **** END GLOBAL MACROS ****
 
 #ifdef	__cplusplus

@@ -372,10 +372,6 @@
 #define ENC7_0_Get()               ((PORTB >> 14) & 0x1)
 #define ENC7_0_PIN                  GPIO_PIN_RB14
 
-/*** Macros for SPI1_SS pin ***/
-#define SPI1_SS_Get()               ((PORTB >> 15) & 0x1)
-#define SPI1_SS_PIN                  GPIO_PIN_RB15
-
 /*** Macros for ENC8_B pin ***/
 #define ENC8_B_Set()               (LATHSET = (1<<4))
 #define ENC8_B_Clear()             (LATHCLR = (1<<4))
@@ -504,6 +500,14 @@
 #define SDA1_TEST_Get()               ((PORTA >> 15) & 0x1)
 #define SDA1_TEST_PIN                  GPIO_PIN_RA15
 
+/*** Macros for AX_SCK pin ***/
+#define AX_SCK_Get()               ((PORTD >> 10) & 0x1)
+#define AX_SCK_PIN                  GPIO_PIN_RD10
+
+/*** Macros for AX_MISO pin ***/
+#define AX_MISO_Get()               ((PORTD >> 11) & 0x1)
+#define AX_MISO_PIN                  GPIO_PIN_RD11
+
 /*** Macros for PWM_SOFT5 pin ***/
 #define PWM_SOFT5_Set()               (LATHSET = (1<<12))
 #define PWM_SOFT5_Clear()             (LATHCLR = (1<<12))
@@ -565,6 +569,14 @@
 #define SOL6_RET_InputEnable()       (TRISJSET = (1<<0))
 #define SOL6_RET_Get()               ((PORTJ >> 0) & 0x1)
 #define SOL6_RET_PIN                  GPIO_PIN_RJ0
+
+/*** Macros for AX_SS pin ***/
+#define AX_SS_Get()               ((PORTD >> 4) & 0x1)
+#define AX_SS_PIN                  GPIO_PIN_RD4
+
+/*** Macros for AX_MOSI pin ***/
+#define AX_MOSI_Get()               ((PORTD >> 5) & 0x1)
+#define AX_MOSI_PIN                  GPIO_PIN_RD5
 
 /*** Macros for U5TX_TEST pin ***/
 #define U5TX_TEST_Get()               ((PORTF >> 0) & 0x1)

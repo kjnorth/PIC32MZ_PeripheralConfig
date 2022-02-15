@@ -203,8 +203,8 @@ void IMU_SampleTask(void) {
  * into N.E.D. coordinates based on how the devices are physically mounted on
  * the machine such that pitch up and roll right are positive 
  */
-//#define PL_IMU
-#define BR_IMU
+//#define PL_BREAKOUT_BOARD
+#define BR_MAIN_BOARD
 
 /* TODO: where should offsets due to mounting inconsistencies be subtracted? 
  * We could also mount, fully nest the PL, on a LEVEL surface and re-calibrate
@@ -213,14 +213,14 @@ void IMU_SampleTask(void) {
  */
 float IMU_RollGet(void) {
     float returnVal = 0.0;
-#if defined(PL_IMU)
+#if defined(PL_BREAKOUT_BOARD)
     float rollData = AngleData[0];
     if (rollData < 0.0) {
         returnVal = rollData + 180.0;
     } else {
         returnVal = rollData - 180.0;
     }
-#elif defined(BR_IMU)
+#elif defined(BR_MAIN_BOARD)
     returnVal = -AngleData[0];
 #else
     returnVal = AngleData[0];
@@ -235,9 +235,9 @@ float IMU_RollGet(void) {
  */
 float IMU_PitchGet(void) {
     float returnVal = 0.0;
-#if defined(PL_IMU)
+#if defined(PL_BREAKOUT_BOARD)
     returnVal = -AngleData[1];
-#elif defined(BR_IMU)
+#elif defined(BR_MAIN_BOARD)
     returnVal = AngleData[1];
 #else
     returnVal = AngleData[1];

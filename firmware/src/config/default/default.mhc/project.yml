@@ -6,13 +6,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: AB67D8A7D0606ADFF3E9184E6CB5B5F9
-- generatedChecksum: 503C95A13812AA9B7E447679C7213C3A
+- generatedChecksum: BB70BECF743E295A17708FEBBBF027E0
   logicalPath: config/default
   name: initialization.c
   physicalPath: ''
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 503C95A13812AA9B7E447679C7213C3A
+  userChecksum: BB70BECF743E295A17708FEBBBF027E0
 - generatedChecksum: 04F89A37D960B3E4FA21AD05E4936074
   logicalPath: config/default
   name: interrupts.c
@@ -34,13 +34,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: C3B3067B199EEA2F11438065DCA0EE7B
-- generatedChecksum: 4D785C4C08289A262BBE4FF8FE731448
+- generatedChecksum: 13F77061E2CC5E1D847591B282CC8E0B
   logicalPath: config/default/peripheral/clk
   name: plib_clk.c
   physicalPath: peripheral/clk
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 4D785C4C08289A262BBE4FF8FE731448
+  userChecksum: 13F77061E2CC5E1D847591B282CC8E0B
 - generatedChecksum: CDE489012C46160ED6A67092B2FFCE99
   logicalPath: config/default/peripheral/coretimer
   name: plib_coretimer.c
@@ -55,13 +55,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: AB6C4B677EA7F5D0E62B4D137DF45CD7
-- generatedChecksum: 02AEEBF93D94FE5CFF95C5C0B8DD019F
+- generatedChecksum: B2E420D2F7C2AC5846F15A49B69341E4
   logicalPath: config/default/peripheral/gpio
   name: plib_gpio.c
   physicalPath: peripheral/gpio
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 02AEEBF93D94FE5CFF95C5C0B8DD019F
+  userChecksum: B2E420D2F7C2AC5846F15A49B69341E4
 - generatedChecksum: 451DBD4978CF3ECC195A212174414B4F
   logicalPath: config/default/peripheral/nvm
   name: plib_nvm.c
@@ -76,13 +76,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 48B808C53AE6D2F0D4807CC463D2B4B7
-- generatedChecksum: 4C746F8B475B7061B8FA0EBEF9B65498
+- generatedChecksum: B056D9BCFA3CCB4795F812F1EFBBC251
   logicalPath: config/default/peripheral/spi/spi_master
-  name: plib_spi1_master.c
+  name: plib_spi4_master.c
   physicalPath: peripheral/spi/spi_master
   security: NON_SECURE
   type: SOURCE
-  userChecksum: 4C746F8B475B7061B8FA0EBEF9B65498
+  userChecksum: B056D9BCFA3CCB4795F812F1EFBBC251
 - generatedChecksum: 64672E3B4C0D709E52030FE08AB39658
   logicalPath: config/default/peripheral/tmr
   name: plib_tmr2.c
@@ -125,13 +125,13 @@ files:
   security: NON_SECURE
   type: SOURCE
   userChecksum: 7806B30ECAE0D18D08CD583D8775530D
-- generatedChecksum: E2403AC45A670702AEDF6CFCFCDBE36C
+- generatedChecksum: 5D9534171BD98BB2BB5C6AA59D0C2269
   logicalPath: config/default
   name: definitions.h
   physicalPath: ''
   security: NON_SECURE
   type: HEADER
-  userChecksum: E2403AC45A670702AEDF6CFCFCDBE36C
+  userChecksum: 5D9534171BD98BB2BB5C6AA59D0C2269
 - generatedChecksum: E189C26B2269F8DE46033CCD0621958D
   logicalPath: config/default
   name: device.h
@@ -181,13 +181,13 @@ files:
   security: NON_SECURE
   type: HEADER
   userChecksum: 815CCB981B6CB758464D89480121DC08
-- generatedChecksum: A8F0665B01ECCBE900C7441A33553F3B
+- generatedChecksum: E20B2125100B8224D2DACA1B05799ADA
   logicalPath: config/default/peripheral/gpio
   name: plib_gpio.h
   physicalPath: peripheral/gpio
   security: NON_SECURE
   type: HEADER
-  userChecksum: A8F0665B01ECCBE900C7441A33553F3B
+  userChecksum: E20B2125100B8224D2DACA1B05799ADA
 - generatedChecksum: 7C954B20EDAB3F13455008470691E59C
   logicalPath: config/default/peripheral/nvm
   name: plib_nvm.h
@@ -209,13 +209,13 @@ files:
   security: NON_SECURE
   type: HEADER
   userChecksum: C7376B9C0FE98B35880E7395A16846B2
-- generatedChecksum: 27EFFF00EA5DD882C446A714F0D9CE9E
+- generatedChecksum: 90B9F3E9BEF1F47DA15B304FF94B4D38
   logicalPath: config/default/peripheral/spi/spi_master
-  name: plib_spi1_master.h
+  name: plib_spi4_master.h
   physicalPath: peripheral/spi/spi_master
   security: NON_SECURE
   type: HEADER
-  userChecksum: 27EFFF00EA5DD882C446A714F0D9CE9E
+  userChecksum: 90B9F3E9BEF1F47DA15B304FF94B4D38
 - generatedChecksum: CFA758C8B7258190473EF7C60C4BA4E9
   logicalPath: config/default/peripheral/spi/spi_master
   name: plib_spi_master_common.h
