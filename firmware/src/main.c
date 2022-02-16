@@ -82,7 +82,6 @@ int main(int argc, char** argv) {
             }
         }
     }
-    LED1_Set();
     
     while (1) {
         /* Maintain state machines of all polled MPLAB Harmony modules. */

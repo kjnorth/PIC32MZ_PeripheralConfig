@@ -153,7 +153,7 @@ void Print_Task(void) {
     if (Uart5.IsRxErrorDetected) {
         Uart5.IsRxErrorDetected = false;
         // do something to indicate that an error occurred and start over
-        LED1_Set();
+//        LED1_Set();
         UART5_ReadAbort();
         PrintState = SEND_START;
     } else if (Uart5.IsRxFinished) {
@@ -179,7 +179,7 @@ void Print_Task(void) {
                     }
                 } else {
                     // error occurred
-                    LED1_Set();
+//                    LED1_Set();
                 }
                 break;
             case VERIFY_ACK_MSG:
@@ -188,7 +188,7 @@ void Print_Task(void) {
                     PrintState = SEND_START;
                 } else {
                     // error occurred
-                    LED1_Set();
+//                    LED1_Set();
                 }
                 break;
         }

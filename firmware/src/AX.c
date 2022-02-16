@@ -344,7 +344,7 @@ void SetDebugLEDs(uint8_t val) {
 int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     uint8_t returnVal = 0;
     
-    unsigned long startTime = Time_GetMs();
+//    unsigned long startTime = Time_GetMs();
 
     /* Clear FIFO */
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_CLEAR_FIFO_DATA_AND_FLAGS);
@@ -358,16 +358,16 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     /* Wait for FIFO power ready */
     while ((AX_Read8(AX_REG_POWSTAT) & AX_POWSTAT_SVMODEM) != AX_POWSTAT_SVMODEM) {};
     
-    debug("fifo power ready after %lu ms\n", Time_GetMs() - startTime);
-    startTime = Time_GetMs();
+//    debug("fifo power ready after %lu ms\n", Time_GetMs() - startTime);
+//    startTime = Time_GetMs();
 
     /* write preamble and packet to FIFO */
     AX_WritePacketToFifo(txPacket, length);
     /* Wait for oscillator to start running */
     while (AX_Read8(AX_REG_XTALSTATUS) != 0x01) {};
     
-    debug("fifo write and crystal ready after %lu ms\n", Time_GetMs() - startTime);
-    startTime = Time_GetMs();
+//    debug("fifo write and crystal ready after %lu ms\n", Time_GetMs() - startTime);
+//    startTime = Time_GetMs();
 
     /* commit packet to the FIFO for tx */
     AX_Write8(AX_REG_FIFOSTAT, AX_FIFOCMD_COMMIT);
@@ -376,8 +376,8 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     while (AX_Read8(AX_REG_RADIOSTATE) != 0x00) {};
     returnVal = 1;
     
-    debug("Tx complete in %lu ms\n", Time_GetMs() - startTime);
-    startTime = Time_GetMs();
+//    debug("Tx complete in %lu ms\n", Time_GetMs() - startTime);
+//    startTime = Time_GetMs();
     
     if (G_Mode == AX_MODE_PTX) {
         G_PtxAckTimeoutStartTimeMs = Time_GetMs();
@@ -385,8 +385,8 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
         AX_PrepareForModeSwitch();
         AX_InitRxRegisters();
         
-        debug("mode switch in %lu ms\n", Time_GetMs() - startTime);
-        startTime = Time_GetMs();
+//        debug("mode switch in %lu ms\n", Time_GetMs() - startTime);
+//        startTime = Time_GetMs();
         
         SetDebugLEDs(5);
         while (1) {
@@ -404,13 +404,9 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
                 } while ((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY);
                 Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
                 
-                if (cntRead > 12) {
-                    debug("EXTRA LARGE PACKET RECEIVED %u\n", cntRead);
-                }
-                debug("receive ack in %lu ms\n", Time_GetMs() - startTime);
-                
+//                debug("receive ack in %lu ms\n", Time_GetMs() - startTime); // time it takes to receive ack after switching into rx mode
 //                static int i = 1;
-//                Print_EnqueueMsg("transmit success %u, response time %ums\n", i++, (Time_GetMs() - G_PtxAckTimeoutStartTimeMs));
+//                Print_EnqueueMsg("transmit success %u, response time %ums\n", i++, (Time_GetMs() - G_PtxAckTimeoutStartTimeMs)); // time it takes to receive ack after transmitting
                 break;
             } else if (G_Mode == AX_MODE_PTX) {
                 if ((Time_GetMs() - G_PtxAckTimeoutStartTimeMs) >= AX_PTX_ACK_TIMEOUT_MS) {
@@ -437,6 +433,14 @@ void AX_Receive(void) {
     if ((stat & 0x01) == 0) {
         // fifo is not empty
         LED1_Toggle();
+        
+//        if (G_Mode == AX_MODE_PRX) {
+//            static uint32_t preRxTime = 0;
+//            uint32_t time = Time_GetMs();
+//            debug("rx delta time %lu\n", time-preRxTime);
+//            preRxTime = time;
+//        }
+        
         G_RxCount++;
         // empty fifo
         uint16_t cntRead = 0;
@@ -448,10 +452,6 @@ void AX_Receive(void) {
             cntRead++;
         } while (((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY) || (cntRead >= PRINT_BUFFER_SIZE));
         Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
-        
-        if (cntRead > 12) {
-            debug("EXTRA LARGE PACKET RECEIVED %u\n", cntRead);
-        }
         
         SetDebugLEDs(2);
         // switch into Tx mode
