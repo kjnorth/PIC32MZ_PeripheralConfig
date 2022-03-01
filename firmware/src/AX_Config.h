@@ -20,10 +20,10 @@
 #define AX_FIFO_MAX_SIZE (255u) // size of the chip's FIFO, 0-indexed
 
 // properties configurable by the developer
-#define PTX_PKTADDR (0x00003432u)
+#define AX_PTX_PKTADDR (0xBBEE3432u)
 #define AX_PTX_ACK_TIMEOUT_MS (100u)
 
-#define PRX_PKTADDR (0x00003433u)
+#define AX_PRX_PKTADDR (0xDDCC3433u)
 
 #define AX_MAX_ENQUEUED_PACKETS (5u)
 #define AX_PAYLOAD_MAX_SIZE (200u) // payload + packet metadata must be <= AX_FIFO_MAX_SIZE

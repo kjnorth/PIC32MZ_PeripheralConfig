@@ -14,6 +14,7 @@
             <make-dep-projects/>
             <sourceRootList>
                 <sourceRootElem>../src</sourceRootElem>
+                <sourceRootElem>C:\Users\Kodiak\Documents\Masterhaul\architecture_rework\alten_dev\MasterhaulPowerloaderSystem\firmware\src\modules</sourceRootElem>
             </sourceRootList>
             <confList>
                 <confElem>

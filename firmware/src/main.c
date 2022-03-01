@@ -124,7 +124,7 @@ int main(int argc, char** argv) {
             pt = ct;
             static uint16_t counter = 0;
             counter++;
-            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0xFF, 0x66, 0x77, 0x88 };
+            uint8_t packet[9] = { 0x09, 0x33, 0x34, 0x00, 0x00, 0xFF, 0x66, 0x77, 0x88 }; // NOTE: may need to update to 4 byte address
             packet[3] = (uint8_t) (counter & 0x00FF);
             packet[4] = (uint8_t) ((counter & 0xFF00) >> 8);
             AX_TransmitPacket(packet, 9);

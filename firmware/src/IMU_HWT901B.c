@@ -204,7 +204,6 @@ void IMU_SampleTask(void) {
  * the machine such that pitch up and roll right are positive 
  */
 //#define PL_BREAKOUT_BOARD
-#define BR_MAIN_BOARD
 
 /* TODO: where should offsets due to mounting inconsistencies be subtracted? 
  * We could also mount, fully nest the PL, on a LEVEL surface and re-calibrate

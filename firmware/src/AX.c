@@ -47,17 +47,17 @@ typedef enum {
     WAIT_RECEIVE,
 } ax_tx_state_t;
 
-typedef enum {
-    PTX_TRANSMIT = 0x5458,
-    PRX_ACK = 0xAC4B,
-} ax_packet_identifier_t;
-
-typedef struct {
-    uint8_t Size; // size of packet metadata (Size, RxAddr, Identifier) + size of relevant bytes in Payload buffer
-    uint32_t RxAddr;
-    ax_packet_identifier_t Identifier;
-    uint8_t Payload[AX_PAYLOAD_MAX_SIZE];
-} ax_tx_packet_t;
+//typedef enum {
+//    PTX_TRANSMIT = 0x5458,
+//    PRX_ACK = 0xAC4B,
+//} ax_packet_identifier_t;
+//
+//typedef struct {
+//    uint8_t Size; // size of packet metadata (Size, RxAddr, Identifier) + size of relevant bytes in Payload buffer
+//    uint32_t RxAddr;
+//    ax_packet_identifier_t Identifier;
+//    uint8_t Payload[AX_PAYLOAD_MAX_SIZE];
+//} ax_tx_packet_t;
 // **** END MODULE TYPEDEFS ****
 // -----------------------------------------------------------------------------
 // **** MODULE GLOBAL VARIABLES ****
@@ -426,6 +426,9 @@ int AX_TransmitPacket(uint8_t* txPacket, uint8_t length) {
     return returnVal;
 }
 
+#include "PLBRComm.h"
+extern ax_rx_packet_t G_LastRxPacket;
+
 /* poll for data available, then blocking switch to Tx mode and transmit ACK */
 void AX_Receive(void) {
     uint16_t stat;
@@ -433,25 +436,39 @@ void AX_Receive(void) {
     if ((stat & 0x01) == 0) {
         // fifo is not empty
         LED1_Toggle();
-        
-//        if (G_Mode == AX_MODE_PRX) {
-//            static uint32_t preRxTime = 0;
-//            uint32_t time = Time_GetMs();
-//            debug("rx delta time %lu\n", time-preRxTime);
-//            preRxTime = time;
-//        }
-        
+            
         G_RxCount++;
         // empty fifo
+        /* original buf code
         uint16_t cntRead = 0;
         
         uint8_t buf[PRINT_BUFFER_SIZE];
+        // init buf to some value that isn't transmitted to parse the packet visually
+        int i = 0;
+        for (; i < 64; i++) {
+            buf[i] = 0x99;
+        }
+        
         SetDebugLEDs(1);        
         do {
             buf[cntRead] = AX_Read8(AX_REG_FIFODATA);
             cntRead++;
         } while (((AX_Read8(AX_REG_FIFOSTAT) & AX_FIFO_EMPTY) != AX_FIFO_EMPTY) || (cntRead >= PRINT_BUFFER_SIZE));
         Print_EnqueueBuffer(buf, PRINT_BUFFER_SIZE);
+        // * */
+        
+        
+        //*
+        if (PLBRComm_ReadPacket()) {
+            Print_EnqueueMsg("head 0x%X, len1 0x%X, flags 0x%X, len2 0x%X, addr 0x%X, lims 0x%X, sols 0x%X, supps 0x%X, flenc 0x%X, frenc 0x%X, process 0x%X, crc 0x%04X\n",
+                    G_LastRxPacket.header.cmd, G_LastRxPacket.header.len, G_LastRxPacket.header.flags, G_LastRxPacket.header.payloadLen,
+                    G_LastRxPacket.header.rxAddress, G_LastRxPacket.payload.limitSwitchStatus, G_LastRxPacket.payload.solenoidSensorStatus,
+                    G_LastRxPacket.payload.supplementaryInputStatus, G_LastRxPacket.payload.plFrontLeftEnc, G_LastRxPacket.payload.plFrontRightEnc,
+                    G_LastRxPacket.payload.currentProcess, G_LastRxPacket.payload.crc);
+        } else {
+            Print_EnqueueMsg("crc validation failed.\n");
+        }
+        // * */
         
         SetDebugLEDs(2);
         // switch into Tx mode
@@ -613,16 +630,18 @@ void AX_InitConfigRegisters(void) {
     AX_Write8(AX_REG_BBTUNE, 0x0F);
     AX_Write8(AX_REG_BBOFFSCAP, 0x77);
     AX_Write8(AX_REG_PKTADDRCFG, 0x01); // address bytes must start at index 1 in the buffer that is transmitted
-    AX_Write8(AX_REG_PKTLENCFG, 0x80); // all bits in length byte are significant // does LEN POS of 0 mean pkt length must be in 0th pos of Tx buffer?
+    AX_Write8(AX_REG_PKTLENCFG, 0x80); // all 8 bits in length byte are significant, packet length byte resides at index 0 in the transmit buffer
+//    AX_Write8(AX_REG_PKTADDRCFG, 0x00); // address bytes must start at index 0 in the buffer that is transmitted
+//    AX_Write8(AX_REG_PKTLENCFG, 0x84); // all 8 bits in length byte are significant, packet length byte resides at index 4 in the transmit buffer
     AX_Write8(AX_REG_PKTLENOFFSET, 0x00);
     if (G_Mode == AX_MODE_PTX) {
         AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE); // PKTMAXLEN includes 3 byte FIFODATA command + data packet length
-        AX_Write32(AX_REG_PKTADDR, PTX_PKTADDR);
+        AX_Write32(AX_REG_PKTADDR, AX_PTX_PKTADDR);
     } else if (G_Mode == AX_MODE_PRX) {
         AX_Write8(AX_REG_PKTMAXLEN, PTX_PRX_TEST_PACKET_SIZE); // PKTMAXLEN includes 3 byte FIFODATA command + data packet length
-        AX_Write32(AX_REG_PKTADDR, PRX_PKTADDR);
+        AX_Write32(AX_REG_PKTADDR, AX_PRX_PKTADDR);
     }
-    AX_Write32(AX_REG_PKTADDRMASK, 0x0000FFFF);
+    AX_Write32(AX_REG_PKTADDRMASK, 0xFFFFFFFF);
 #ifdef DEV_KIT_TX
     AX_Write32(AX_REG_MATCH0PAT, 0xAACCAACC); // this is preamble0 that Rx uses to detect/accept an incoming packet
 #else
